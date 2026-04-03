@@ -55,7 +55,7 @@ EVENT_RECORD_POST_SEC = 15.0
 # 서버 업로드 설정
 SERVER_URL = "http://3.212.81.201:5000"
 UPLOAD_ENABLED = True
-UPLOAD_URL = "{SERVER_URL}/upload"
+UPLOAD_URL = f"{SERVER_URL}/upload"
 UPLOAD_DEVICE_ID = "jetson1"
 UPLOAD_DEVICE_KEY = "a3f9c7e1d2b4a6f8c0e1d3b5a7c9e2f4"
 UPLOAD_REL_DIR = "video"
@@ -66,7 +66,7 @@ UPLOAD_RETRY_DELAY_SEC = 2.0
 # 이벤트 JSON 로그 전송 설정 (yolo_test-main 기준)
 # 영상과 별개로 경고 레벨 메타데이터를 JSON으로 빠르게 전송
 EVENT_LOG_ENABLED = True                             # False로 바꾸면 전송 비활성화
-EVENT_LOG_URL = "{SERVER_URL}/stats/hourly"  # 백엔드 팀에서 공유된 API 주소
+EVENT_LOG_URL = f"{SERVER_URL}/stats/hourly"  # 백엔드 팀에서 공유된 API 주소
 EVENT_LOG_TIMEOUT_SEC = 1.0                          # 영상 끊김 방지용 짧은 타임아웃
 EVENT_LOG_COOLDOWN_SEC = 4.0                         # 동일 카메라 연속 전송 최소 간격 (중복 방지)
 
