@@ -7,12 +7,16 @@ import cv2
 import numpy as np
 from typing import List, Optional, Sequence, Tuple, TypedDict
 
-class Detection(TypedDict):
-    """탐지 결과 단일 항목"""
+class _DetectionRequired(TypedDict):
+    """탐지 결과 — 필수 필드"""
     bbox: Tuple[int, int, int, int]  # (x1, y1, x2, y2)
     confidence: float
     class_id: int
     class_name: str
+
+class Detection(_DetectionRequired, total=False):
+    """탐지 결과 단일 항목 (track_id 는 tracking=True 시에만 채워짐)"""
+    track_id: Optional[int]
 
 
 def check_intrusion(

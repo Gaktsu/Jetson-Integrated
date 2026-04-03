@@ -82,27 +82,32 @@ class YOLOInference:
             {"num_classes": len(self.names)}
         )
         
-    def run_inference(self, frame: cv2.Mat):
+    def run_inference(self, frame: cv2.Mat, tracking: bool = False):
         """
         YOLO 모델 추론 실행
 
         Args:
-            frame: 입력 프레임 (OpenCV BGR numpy array)
-                   전처리(resize, normalize, tensor 변환)는 Ultralytics 내부에서 자동 처리
+            frame:    입력 프레임 (OpenCV BGR numpy array)
+                      전처리(resize, normalize, tensor 변환)는 Ultralytics 내부에서 자동 처리
+            tracking: True 이면 model.track(persist=True)로 객체 추적 활성화.
+                      False 이면 기존 model() 단순 탐지 사용.
         Returns:
             Ultralytics Results 객체 리스트
         """
         # TensorRT 전환 시 이 메서드만 교체하면 됩니다
         # (예: self.model = torch2trt 또는 TRTModule)
-        return self.model(
-            frame,
+        common_kwargs = dict(
             conf=self.conf,
             imgsz=self.imgsz,
-            half=INFER_HALF,                  # settings.py의 INFER_HALF 사용
-            device=self.device,               # GPU 강제 지정 (설정 기반)
-            classes=[TARGET_CLASS_ID],        # NMS 전 person 클래스만 처리 → 후처리 부하 감소
-            verbose=False
+            half=INFER_HALF,           # settings.py의 INFER_HALF 사용
+            device=self.device,        # GPU 강제 지정 (설정 기반)
+            classes=[TARGET_CLASS_ID], # NMS 전 person 클래스만 처리 → 후처리 부하 감소
+            verbose=False,
         )
+        if tracking:
+            # persist=True: 프레임 간 동일 객체에 일관된 track_id 유지
+            return self.model.track(frame, persist=True, **common_kwargs)
+        return self.model(frame, **common_kwargs)
 
     def postprocess_results(self, results) -> List[Detection]:
         """
@@ -132,26 +137,38 @@ class YOLOInference:
         if boxes is None or len(boxes) == 0:
             return detections
 
-        # boxes.data: (N, 6) — [x1, y1, x2, y2, conf, cls]
-        # 단일 GPU→CPU 전송으로 xyxy/conf/cls를 한 번에 처리
-        data = boxes.data.cpu().numpy()
-        total = len(data)
+        # track_ids: run_inference(tracking=True) 시 boxes.id에 track ID가 담김
+        # 단순 탐지 모드에서는 boxes.id 가 None
+        raw_ids = boxes.id  # Tensor or None
+        track_ids: Optional[List[Optional[int]]]
+        if raw_ids is not None:
+            track_ids = raw_ids.int().cpu().tolist()
+        else:
+            track_ids = None
 
-        # numpy 벡터화: TARGET_CLASS_ID 마스크를 한 번에 적용 (Python 루프 최소화)
-        mask = data[:, 5].astype(int) == TARGET_CLASS_ID
-        person_rows = data[mask]
+        # boxes.xyxy / conf / cls 를 개별 속성으로 가져옴
+        # (tracking 시 boxes.data 열 순서가 달라질 수 있어 명시적 접근 선호)
+        xyxy = boxes.xyxy.cpu().numpy()          # (N, 4)
+        confs = boxes.conf.cpu().numpy()         # (N,)
+        clss = boxes.cls.cpu().numpy().astype(int)  # (N,)
+        total = len(xyxy)
+
         class_name = (
             self.names[TARGET_CLASS_ID]
             if 0 <= TARGET_CLASS_ID < len(self.names)
             else str(TARGET_CLASS_ID)
         )
 
-        for row in person_rows:
+        for i, (box, conf, cls_id) in enumerate(zip(xyxy, confs, clss)):
+            if cls_id != TARGET_CLASS_ID:
+                continue
+            tid: Optional[int] = track_ids[i] if track_ids is not None else None
             detections.append(Detection(
-                bbox=(int(row[0]), int(row[1]), int(row[2]), int(row[3])),
-                confidence=float(row[4]),
+                bbox=(int(box[0]), int(box[1]), int(box[2]), int(box[3])),
+                confidence=float(conf),
                 class_id=TARGET_CLASS_ID,
                 class_name=class_name,
+                track_id=tid,
             ))
 
         logger.debug(
@@ -161,15 +178,16 @@ class YOLOInference:
 
         return detections
 
-    def predict(self, frame: cv2.Mat) -> List[Detection]:
+    def predict(self, frame: cv2.Mat, tracking: bool = False) -> List[Detection]:
         """
         run_inference + postprocess_results 단일 호출 편의 메서드
 
         Args:
-            frame: 입력 프레임
+            frame:    입력 프레임
+            tracking: True 이면 model.track() 기반 추적 활성화
 
         Returns:
-            Detection 리스트
+            Detection 리스트 (tracking=True 시 각 항목에 track_id 포함)
         """
-        results = self.run_inference(frame)
+        results = self.run_inference(frame, tracking=tracking)
         return self.postprocess_results(results)
