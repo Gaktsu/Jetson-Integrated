@@ -22,7 +22,7 @@ CAMERA_RETRY_DELAY = 5.0  # 초
 CAMERA_FPS = 27.0         # 카메라 실제 FPS (VideoWriter 기준, 저장 영상 재생 속도에 영향)
 
 # YOLO 추론 설정
-INFER_STRIDE = 3         # N프레임마다 1회 추론
+INFER_STRIDE = 1         # N프레임마다 1회 추론 (1=매 프레임, 3=3프레임 중 1회)
 CONFIDENCE_THRESHOLD = 0.5
 INFER_IMGSZ = 320        # 추론 입력 해상도 (TensorRT 전환 시에도 이 값 사용)
 INFER_HALF = True        # FP16 추론 활성화 (Jetson GPU 권장)
