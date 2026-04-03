@@ -138,7 +138,9 @@ def draw_detections(
             cv2.circle(frame, (foot_x, foot_y), 7, dot_color, -1)
             tid = det.get("track_id")
             if tid is not None:
-                cv2.putText(frame, f"ID:{tid}", (foot_x + 10, foot_y - 10),
+                label = f"ID:{tid}"
+                (tw, _), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+                cv2.putText(frame, label, (foot_x - tw // 2, foot_y + 22),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
 
     # ── 상단 상태바 (yolo_test-main 스타일) ──
