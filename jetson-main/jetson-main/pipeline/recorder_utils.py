@@ -17,16 +17,20 @@ from utils.logger import get_logger, EventType
 
 logger = get_logger("pipeline.recorder_utils")
 
-def _transcode_to_h264(file_path: str) -> bool:
+def _transcode_to_h264(file_path: str) -> Optional[str]:
     """
-    저장된 mp4v 파일을 H.264 코덱으로 변환 (ffmpeg 사용).
-    변환 성공 시 원본(mp4v) 파일을 삭제하고 H.264 파일로 교체합니다.
-    변환 실패 시 임시 파일을 삭제하고 원본을 보존합니다.
+    저장된 MJPG .avi 파일을 H.264 .mp4로 변환 (ffmpeg 사용).
+    변환 성공 시 원본(.avi)을 삭제하고 생성된 .mp4 경로를 반환합니다.
+    변환 실패 시 임시 파일을 삭제하고 원본을 보존한 뒤 None을 반환합니다.
 
     Args:
-        file_path: 변환할 mp4 파일 경로 (mp4v 코덱)
+        file_path: 변환할 .avi 파일 경로 (MJPG 코덱)
+
+    Returns:
+        성공 시 생성된 .mp4 파일 경로, 실패 시 None
     """
-    tmp_path = file_path.replace(".mp4", "_h264_tmp.mp4")
+    tmp_path = file_path.replace(".avi", "_h264_tmp.mp4")
+    out_path  = file_path.replace(".avi", ".mp4")
     cmd = [
         "ffmpeg", "-y",
         "-i", file_path,
@@ -49,18 +53,18 @@ def _transcode_to_h264(file_path: str) -> bool:
             timeout=300
         )
         if result.returncode == 0:
-            # 1단계: 원본(mp4v) 파일 명시적 삭제
+            # 1단계: 원본(.avi) 파일 삭제
             try:
                 os.remove(file_path)
                 logger.event_info(
                     EventType.MODULE_STOP,
-                    "원본 mp4v 파일 삭제 완료",
+                    "원본 avi 파일 삭제 완료",
                     {"file": file_path}
                 )
             except Exception as e:
                 logger.event_error(
                     EventType.ERROR_OCCURRED,
-                    "원본 mp4v 파일 삭제 실패",
+                    "원본 avi 파일 삭제 실패",
                     {"file": file_path, "error": str(e)}
                 )
                 # 원본 삭제 실패 시 임시 파일도 정리
@@ -69,27 +73,27 @@ def _transcode_to_h264(file_path: str) -> bool:
                         os.remove(tmp_path)
                     except Exception:
                         pass
-                return False
+                return None
 
-            # 2단계: H.264 임시 파일을 원본 경로로 이동
+            # 2단계: H.264 임시 파일을 .mp4 출력 경로로 이동
             try:
-                os.rename(tmp_path, file_path)
+                os.rename(tmp_path, out_path)
                 # 3단계: chmod +x (소유자/그룹/기타 실행 권한 추가)
-                current = stat.S_IMODE(os.stat(file_path).st_mode)
-                os.chmod(file_path, current | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                current = stat.S_IMODE(os.stat(out_path).st_mode)
+                os.chmod(out_path, current | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
                 logger.event_info(
                     EventType.MODULE_STOP,
-                    "H.264 변환 완료 (원본 교체됨, chmod +x 적용)",
-                    {"file": file_path}
+                    "H.264 변환 완료 (chmod +x 적용)",
+                    {"file": out_path}
                 )
-                return True
+                return out_path
             except Exception as e:
                 logger.event_error(
                     EventType.ERROR_OCCURRED,
                     "H.264 파일 이동 실패 (원본은 이미 삭제됨)",
-                    {"tmp_file": tmp_path, "dest": file_path, "error": str(e)}
+                    {"tmp_file": tmp_path, "dest": out_path, "error": str(e)}
                 )
-                return False
+                return None
         else:
             logger.event_error(
                 EventType.ERROR_OCCURRED,
@@ -98,7 +102,7 @@ def _transcode_to_h264(file_path: str) -> bool:
             )
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
-            return False
+            return None
     except subprocess.TimeoutExpired:
         logger.event_error(
             EventType.ERROR_OCCURRED,
@@ -110,7 +114,7 @@ def _transcode_to_h264(file_path: str) -> bool:
                 os.remove(tmp_path)
             except Exception:
                 pass
-        return False
+        return None
     except Exception as e:
         logger.event_error(
             EventType.ERROR_OCCURRED,
@@ -122,17 +126,17 @@ def _transcode_to_h264(file_path: str) -> bool:
                 os.remove(tmp_path)
             except Exception:
                 pass
-        return False
+        return None
 
 
 def _transcode_and_upload(file_path: str) -> None:
     """H.264 변환 후 즉시 업로드를 수행한다."""
-    ok = _transcode_to_h264(file_path)
-    if not ok:
+    out_path = _transcode_to_h264(file_path)
+    if out_path is None:
         return
     if not UPLOAD_ENABLED:
         return
-    upload_video_file(file_path)
+    upload_video_file(out_path)
 
 
 def _create_event_folder(
@@ -306,17 +310,17 @@ def _build_event_filename(
         # full_recording 폴더인 경우: 타임스탬프 포함
         if event_folder.endswith("full_recording"):
             time_tag = datetime.fromtimestamp(event_ts).strftime("%Y%m%d_%H%M%S")
-            filename = f"camera{cam_id}_{time_tag}.mp4"
+            filename = f"camera{cam_id}_{time_tag}.avi"
             return os.path.join(event_folder, filename)
         # 이벤트 폴더인 경우: 간단한 파일명
         else:
-            filename = f"camera{cam_id}.mp4"
+            filename = f"camera{cam_id}.avi"
             return os.path.join(event_folder, filename)
     else:
         # 이벤트 폴더 없으면 기존 방식 (타임스탬프+GPS)
         time_tag = datetime.fromtimestamp(event_ts).strftime("%Y%m%d_%H%M%S")
         gps_tag = _format_gps_tag(sensor_data)
-        filename = f"camera{cam_id}_{time_tag}_{gps_tag}.mp4"
+        filename = f"camera{cam_id}_{time_tag}_{gps_tag}.avi"
         return os.path.join(save_dir, filename)
 
 

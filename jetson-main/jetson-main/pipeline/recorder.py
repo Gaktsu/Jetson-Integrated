@@ -35,7 +35,7 @@ def start_save_thread(
         target=save_loop,
         args=(
             save_queue, save_stop_event, SAVE_DIR, fps_map,
-            "mp4v", get_sensor_snapshot, state_map,
+            "MJPG", get_sensor_snapshot, state_map,
             RECORDING_MODE, EVENT_RECORD_BUFFER_SEC, EVENT_RECORD_POST_SEC,
         ),
         daemon=True, name="save_worker"
