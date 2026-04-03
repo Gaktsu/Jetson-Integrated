@@ -329,10 +329,11 @@ def main():
     if cameras is None:
         return
 
-    # 2. 모델 로드
-    model = load_model()
-    if model is None:
+    # 2. 카메라별 독립 모델 로드 (ByteTrack 상태 공유 방지)
+    _loaded = [load_model() for _ in cameras]
+    if any(m is None for m in _loaded):
         return
+    models: List[Any] = [m for m in _loaded if m is not None]
 
     # 3. 공유 자원 준비
     save_queue       = queue.Queue(maxsize=512)
@@ -351,7 +352,7 @@ def main():
     gps, imu = GPS(), IMU()
     threads: List[threading.Thread] = (
         start_capture_threads(cameras, states, fps_map, save_queue)
-        + start_inference_thread(model, states, get_sensor_snapshot, inference_stop_event)
+        + start_inference_thread(models, states, get_sensor_snapshot, inference_stop_event)
         + start_sensor_threads(gps, imu, sensor_stop_event, gps_buffer, imu_buffer)
         + [start_save_thread(save_queue, save_stop_event, fps_map, get_sensor_snapshot, state_map)]
     )
