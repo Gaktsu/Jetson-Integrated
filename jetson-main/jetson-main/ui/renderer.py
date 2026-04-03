@@ -2,7 +2,8 @@
 UI rendering helpers.
 """
 import cv2
-from typing import List, Optional
+import numpy as np
+from typing import Any, List, Optional, Sequence
 from datetime import datetime
 
 from ai.detector import Detection
@@ -80,37 +81,38 @@ def draw_detections(
     inference_ms: float = 0.0,
     postprocess_ms: float = 0.0,
     draw_ms: float = 0.0,
+    roi_polygon: Optional[Sequence[Sequence[int]]] = None,
 ) -> cv2.Mat:
     """
     탐지 결과를 프레임에 그리기
     """
     h, w = frame.shape[:2]
-    
-    # 경고 영역 정의 (화면 우측 20%)
-    warning_zone_x1 = int(w * 0.8)
-    warning_zone = (warning_zone_x1, 0, w, h)
-    
-    # 반투명 경고 영역 그리기
-    # 전체 프레임 대신 경고 영역(우측 20%) ROI만 복사
-    roi = frame[:, warning_zone_x1:]
-    roi_bg = roi.copy()
-    cv2.rectangle(roi_bg, (0, 0), (roi_bg.shape[1], roi_bg.shape[0]), (0, 0, 255), -1)
-    cv2.addWeighted(roi_bg, 0.3, roi, 0.7, 0, roi)
-    cv2.rectangle(frame, (warning_zone_x1, 0), (w, h), (0, 0, 255), 2)
-    
-    # 침입 여부 (inference 루프에서 이미 계산된 값을 그대로 사용)
-    intrusion_detected = intrusion
-    
-    # 바운딩 박스 그리기
+
+    # ── 폴리곤 ROI 오버레이 ──
+    # roi_setup.py 에서 설정한 영역을 반투명으로 표시
+    # 침입 시 빨강, 평상시 초록
+    poly_arr = None
+    if roi_polygon is not None and len(roi_polygon) >= 3:
+        poly_arr = np.array(roi_polygon, dtype=np.int32)
+        roi_color = (0, 0, 255) if intrusion else (0, 255, 0)
+        overlay = frame.copy()
+        cv2.fillPoly(overlay, [poly_arr], roi_color)
+        cv2.addWeighted(overlay, 0.2, frame, 0.8, 0, frame)
+        cv2.polylines(frame, [poly_arr], True, roi_color, 2)
+
+    # ── 바운딩 박스 그리기 ──
+    # 발끝(foot-point)이 폴리곤 내부인지 개별 판별해 색상 결정
     for det in detections:
         x1, y1, x2, y2 = det["bbox"]
         if det["class_id"] == 0:  # person
-            # 침입 여부에 따라 색상 변경
-            wx1, wy1, wx2, wy2 = warning_zone
-            is_in_zone = not (x2 < wx1 or x1 > wx2 or y2 < wy1 or y1 > wy2)
-
-            color = (0, 0, 255) if is_in_zone else (0, 255, 0)
-            thickness = 3 if is_in_zone else 2
+            foot_x = (x1 + x2) // 2
+            foot_y = y2
+            is_inside = (
+                poly_arr is not None and
+                cv2.pointPolygonTest(poly_arr, (float(foot_x), float(foot_y)), False) >= 0
+            )
+            color = (0, 0, 255) if is_inside else (0, 255, 0)
+            thickness = 3 if is_inside else 2
 
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, thickness)
 
@@ -119,7 +121,7 @@ def draw_detections(
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
     
     # Warning 문구
-    if intrusion_detected and not saving:
+    if intrusion and not saving:
         warning_text = "WARNING!"
         font_scale = 2.0
         thickness = 4

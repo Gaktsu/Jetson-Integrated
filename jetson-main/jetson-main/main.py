@@ -2,15 +2,17 @@
 메인 실행 파일 - 전체 흐름 제어
 """
 import cv2
+import os
 import threading
 import time
 import queue
 import numpy as np
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from config.settings import (
     CAMERA_INDICES,
     DISPLAY_MODE,
     EVENT_RECORD_POST_SEC,
+    PROJECT_ROOT,
     RECORDING_MODE,
     WATCHDOG_TEST_DELAY,
     WATCHDOG_TEST_MODE,
@@ -27,6 +29,7 @@ from pipeline.inference import start_inference_thread
 from pipeline.recorder import start_save_thread
 from pipeline.sensors import start_sensor_threads
 from ui.renderer import draw_detections
+from ai.detector import load_roi_polygon
 from utils.time_utils import FPSCounter
 from utils.sensor_sync import SensorBuffer
 from utils.logger import get_logger, EventType
@@ -186,10 +189,20 @@ def _stack_panels(panels: List[cv2.Mat]) -> cv2.Mat:
     return np.vstack(row_imgs)
 
 
+def _load_roi_polygons() -> Dict[int, Any]:
+    """카메라별 ROI 폴리곤 파일을 읽어 dict 반환. 파일 없으면 None."""
+    polygons = {}
+    for cam_id in CAMERA_INDICES:
+        path = os.path.join(PROJECT_ROOT, "config", f"roi_config_cam{cam_id}.json")
+        polygons[cam_id] = load_roi_polygon(path)
+    return polygons
+
+
 def _build_split_frame(
     states: List[SharedState],
     fps_counters: Dict[int, "FPSCounter"],
     draw_ms_list: List[float],
+    roi_polygons: Optional[Dict[int, Any]] = None,
 ) -> Tuple[cv2.Mat, bool, List[float]]:
     """모든 카메라 프레임을 분할 합성. (combined_frame, any_intrusion, new_draw_ms_list) 반환"""
     panels = []
@@ -220,6 +233,7 @@ def _build_split_frame(
             inference_ms=state.inference_ms,
             postprocess_ms=state.postprocess_ms,
             draw_ms=draw_ms_list[i],
+            roi_polygon=roi_polygons.get(cam_id) if roi_polygons else None,
         )
         new_draw_ms.append((time.perf_counter() - t0) * 1000)
         panels.append(panel)
@@ -354,6 +368,7 @@ def main():
     draw_ms = 0.0
     draw_ms_list = [0.0] * len(cameras)   # split 모드용 카메라별 draw_ms
     last_seqs = [-1] * len(cameras)        # split 모드용 프레임 시퀀스 추적
+    roi_polygons = _load_roi_polygons()    # 카메라별 ROI 폴리곤
     try:
         logger.event_info(EventType.STATE_CHANGE, "메인 루프 시작",
                           {"exit_key": "q",
@@ -370,7 +385,7 @@ def main():
                 last_seqs = new_seqs[:]
 
                 combined, any_intrusion, draw_ms_list = _build_split_frame(
-                    states, fps_counters, draw_ms_list
+                    states, fps_counters, draw_ms_list, roi_polygons
                 )
                 buzzer.activate() if any_intrusion else buzzer.deactivate()
                 cv2.imshow(WINDOW_NAME, combined)
@@ -382,6 +397,7 @@ def main():
                     break
                 elif key == ord('w'):
                     _open_roi_setup(states)
+                    roi_polygons = _load_roi_polygons()  # ROI 재설정 반영
 
             else:
                 # ── 전환 모드: 한 카메라씩, [C] 키로 전환 ──
@@ -404,6 +420,7 @@ def main():
                     inference_ms=state.inference_ms,
                     postprocess_ms=state.postprocess_ms,
                     draw_ms=draw_ms,
+                    roi_polygon=roi_polygons.get(CAMERA_INDICES[cam_idx]),
                 )
                 draw_ms = (time.perf_counter() - t_draw) * 1000
 
@@ -418,6 +435,7 @@ def main():
                     last_frame_seq = -1  # 카메라 전환 시 이전 시퀀스 초기화
                 elif key == ord('w'):
                     _open_roi_setup(states)
+                    roi_polygons = _load_roi_polygons()  # ROI 재설정 반영
                     last_frame_seq = -1  # 창 복원 후 이전 시퀀스 초기화
 
     except KeyboardInterrupt:
