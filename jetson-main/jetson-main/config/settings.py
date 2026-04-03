@@ -25,7 +25,7 @@ CAMERA_FPS = 27.0         # 카메라 실제 FPS (VideoWriter 기준, 저장 영
 INFER_STRIDE = 1         # N프레임마다 1회 추론 (1=매 프레임, 3=3프레임 중 1회)
 CONFIDENCE_THRESHOLD = 0.25
 INFER_IMGSZ = 640        # 추론 입력 해상도 (TensorRT 전환 시에도 이 값 사용)
-INFER_HALF = True        # FP16 추론 활성화 (Jetson GPU 권장)
+INFER_HALF = False       # FP16 추론 비활성화 (탐지 품질 우선 — 속도 필요 시 True로 변경)
 INFER_DEVICE = "cuda:0"  # 추론 디바이스 ("cuda:0": GPU 강제, "cpu": CPU 전용)
 TARGET_CLASS_ID = 0      # person 클래스
 
