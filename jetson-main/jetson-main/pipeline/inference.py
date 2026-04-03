@@ -64,15 +64,18 @@ def inference_loop(
     empty_count = 0
 
     # 카메라별 ROI 폴리곤 로드 (roi_config_cam{N}.json)
+    # None인 카메라는 매 프레임마다 재시도 — 나중에 roi_setup으로 파일이 생겨도 자동 반영
     roi_polygons: Dict[int, Any] = {}
+    _roi_paths: Dict[int, str] = {}
     for cam_idx in CAMERA_INDICES:
         path = os.path.join(PROJECT_ROOT, "config", f"roi_config_cam{cam_idx}.json")
+        _roi_paths[cam_idx] = path
         poly = load_roi_polygon(path)
         roi_polygons[cam_idx] = poly
         if poly:
             logger.event_info(EventType.MODULE_INIT, f"ROI 폴리곤 로드 완료", {"cam": cam_idx, "path": path})
         else:
-            logger.event_info(EventType.MODULE_INIT, f"ROI 폴리곤 없음 — 침입 판별 비활성", {"cam": cam_idx})
+            logger.event_info(EventType.MODULE_INIT, f"ROI 폴리곤 없음 — 파일 생성 시 자동 로드됨", {"cam": cam_idx})
 
     # 집계 로그용 누적 변수 (5초마다 평균/최대 출력)
     _AGG_INTERVAL = 5.0
@@ -156,6 +159,19 @@ def inference_loop(
 
             # 해당 카메라의 ROI 폴리곤으로 foot-point 기반 침입 판별
             cam_id = CAMERA_INDICES[idx] if idx < len(CAMERA_INDICES) else idx
+
+            # ROI 폴리곤이 아직 None이면 파일을 다시 읽어봄
+            # (시스템 시작 후 roi_setup으로 파일을 만든 경우 자동 반영)
+            if roi_polygons.get(cam_id) is None and cam_id in _roi_paths:
+                poly = load_roi_polygon(_roi_paths[cam_id])
+                if poly:
+                    roi_polygons[cam_id] = poly
+                    logger.event_info(
+                        EventType.MODULE_INIT,
+                        "ROI 폴리곤 지연 로드 완료",
+                        {"cam": cam_id, "path": _roi_paths[cam_id]},
+                    )
+
             intrusion = check_intrusion_polygon(detections, roi_polygons.get(cam_id))
 
             with state.det_lock:
