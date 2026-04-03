@@ -107,14 +107,23 @@ def _determine_saving_global(states: List[SharedState]) -> bool:
     return False
 
 
-def _open_roi_setup() -> None:
+def _open_roi_setup(states: List[SharedState]) -> None:
     """ROI 캘리브레이션 도구를 메인 스레드에서 실행.
     백그라운드 스레드(캡처/추론/저장/센서)는 계속 실행된다.
+    카메라 충돌 방지를 위해 SharedState의 최신 프레임을 frame_getter로 전달한다.
     """
     logger.event_info(EventType.USER_INPUT, "ROI 캘리브레이션 도구 열기", {"key": "w"})
     cv2.destroyWindow(WINDOW_NAME)
     cv2.waitKey(1)
-    _roi_setup_mod.main()
+
+    def frame_getter():
+        state = states[0]
+        with state.frame_lock:
+            if state.latest_frame is not None:
+                return state.latest_frame.copy()
+        return None
+
+    _roi_setup_mod.main(frame_getter=frame_getter)
     # 캘리브레이션 종료 후 메인 전체화면 창 복원
     cv2.namedWindow(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN)
     cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
@@ -354,7 +363,7 @@ def main():
                     cv2.waitKey(1)
                     break
                 elif key == ord('w'):
-                    _open_roi_setup()
+                    _open_roi_setup(states)
 
             else:
                 # ── 전환 모드: 한 카메라씩, [C] 키로 전환 ──
@@ -390,7 +399,7 @@ def main():
                 if key == ord('c'):
                     last_frame_seq = -1  # 카메라 전환 시 이전 시퀀스 초기화
                 elif key == ord('w'):
-                    _open_roi_setup()
+                    _open_roi_setup(states)
                     last_frame_seq = -1  # 창 복원 후 이전 시퀀스 초기화
 
     except KeyboardInterrupt:

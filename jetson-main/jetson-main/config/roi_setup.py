@@ -47,20 +47,32 @@ def _draw_roi_callback(event: int, x: int, y: int, flags: int, param: object) ->
             print(f"[{len(points)}/4] 좌표 저장됨: ({x}, {y})")
 
 
-def main() -> None:
+def main(frame_getter=None) -> None:
+    """ROI 캘리브레이션 도구 실행.
+
+    Args:
+        frame_getter: 호출 시 최신 프레임(numpy array)을 반환하는 콜백.
+                      None이면 카메라를 직접 열어 사용 (단독 실행 모드).
+                      main.py에서 호출 시 SharedState 프레임을 전달해 카메라 충돌을 방지.
+    """
     global points
     points = []  # 재실행 시 초기화
 
-    cap = cv2.VideoCapture(CAMERA_INDEX)
-    if not cap.isOpened():
-        print(f"[에러] 카메라(index={CAMERA_INDEX})를 열 수 없습니다.")
-        print("       config/settings.py 의 CAMERA_INDEX 값을 확인하세요.")
-        return
+    cap = None
+    frame_w: int = 0
+    frame_h: int = 0
 
-    # main.py와 동일한 기준: 카메라 실제 출력 해상도를 그대로 사용 (별도 리사이즈 없음)
-    frame_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    print(f"카메라 해상도: {frame_w}x{frame_h} (main.py 표시 기준과 동일)")
+    if frame_getter is None:
+        # ── 단독 실행 모드: 카메라 직접 열기 ──
+        cap = cv2.VideoCapture(CAMERA_INDEX)
+        if not cap.isOpened():
+            print(f"[에러] 카메라(index={CAMERA_INDEX})를 열 수 없습니다.")
+            print("       config/settings.py 의 CAMERA_INDEX 값을 확인하세요.")
+            return
+        frame_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        print(f"카메라 해상도: {frame_w}x{frame_h}")
+    # frame_getter 모드일 땐 첫 프레임을 받은 뒤 해상도를 결정
 
     window_name = "ROI Calibration Tool"
     cv2.namedWindow(window_name)
@@ -72,10 +84,22 @@ def main() -> None:
     print("'r' 키: 점 초기화 | 4개 완성 후 'q': 저장 및 종료 | 4개 미만 'q': 저장 없이 종료")
 
     while True:
-        ret, frame = cap.read()
-        if not ret:
-            print("[에러] 프레임을 읽을 수 없습니다.")
-            break
+        if frame_getter is not None:
+            # ── main.py 연동 모드: SharedState에서 프레임 읽기 ──
+            frame = frame_getter()
+            if frame is None:
+                cv2.waitKey(1)
+                continue
+            # 첫 유효 프레임에서 해상도 결정
+            if frame_h == 0:
+                frame_h, frame_w = frame.shape[:2]
+                print(f"카메라 해상도: {frame_w}x{frame_h} (main.py 표시 기준과 동일)")
+        else:
+            # ── 단독 실행 모드: 카메라에서 직접 읽기 ──
+            ret, frame = cap.read()
+            if not ret:
+                print("[에러] 프레임을 읽을 수 없습니다.")
+                break
 
         # 저장된 점 표시
         for p in points:
@@ -127,8 +151,10 @@ def main() -> None:
 
         # (자동 종료 없음 — q키로만 종료)
 
-    cap.release()
-    cv2.destroyAllWindows()
+    if cap is not None:
+        cap.release()
+    cv2.destroyWindow(window_name)
+    cv2.waitKey(1)
 
 
 if __name__ == "__main__":
