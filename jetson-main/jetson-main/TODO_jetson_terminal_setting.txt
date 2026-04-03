@@ -1,0 +1,59 @@
+권장 설정: 컴퓨터 시간 + NTP
+Jetson 설정 (1회만)
+
+# 1. 시간대 설정 (한국)
+sudo timedatectl set-timezone Asia/Seoul
+
+# 2. NTP 자동 동기화 활성화
+sudo timedatectl set-ntp true
+
+# 3. 확인
+timedatectl status
+-----
+결과:
+
+ Local time: 월 2026-02-17 16:30:15 KST
+           Universal time: 월 2026-02-17 07:30:15 UTC
+                 RTC time: 월 2026-02-17 07:30:15
+                Time zone: Asia/Seoul (KST, +0900)
+System clock synchronized: yes  ← ✅ NTP 동기화 중
+              NTP service: active  ← ✅ 활성화됨
+          RTC in local TZ: no
+-----
+부팅 시 자동 동기화
+
+# systemd-timesyncd 활성화 (보통 기본값)
+sudo systemctl enable systemd-timesyncd
+sudo systemctl start systemd-timesyncd
+
+# 상태 확인
+systemctl status systemd-timesyncd
+-----
+정확도 테스트
+
+# 1. 현재 시간
+date
+
+# 2. 인터넷 시간과 비교
+curl -s http://worldtimeapi.org/api/timezone/Asia/Seoul | grep datetime
+
+# 3. NTP 동기화 상태
+timedatectl timesync-status
+-----
+결론 및 추천
+1분 오차 OK면 → 무조건 컴퓨터 시간!
+
+기준	컴퓨터(NTP)	GPS
+정확도	±0.1초	±0.1초
+안정성	⭐⭐⭐⭐⭐	⭐⭐ (실내 불가)
+간편함	⭐⭐⭐⭐⭐	⭐⭐ (복잡)
+실용성	⭐⭐⭐⭐⭐	⭐⭐
+코드 변경	불필요	필요
+1분 오차	✅ 충분	✅ 충분
+추천 구성
+이유:
+
+시간은 항상 필요 → 컴퓨터 시간 (안정적)
+좌표는 선택적 → GPS (가능할 때만)
+별도 코드 불필요
+1분 오차? NTP로 1초도 안 되는 오차!

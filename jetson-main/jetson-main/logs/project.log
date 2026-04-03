@@ -1,0 +1,20 @@
+2026-01-27 13:40:24 - project - INFO - === Person Detection System 시작 ===
+2026-01-27 13:40:24 - project - INFO - YOLO 모델 로드 중: C:\Users\User\Desktop\MinSung\python\project\models\person_detect_v4.pt
+2026-01-27 13:40:24 - project - INFO - 모델 로드 완료
+2026-01-27 13:40:24 - project - INFO - 카메라 초기화 중 (인덱스: 0)
+2026-01-27 13:40:25 - project - INFO - 카메라 초기화 완료
+2026-01-27 13:40:25 - project - INFO - 캡처 및 추론 스레드 시작
+2026-01-27 13:40:25 - project - INFO - 메인 루프 시작 (종료: 'q' 키)
+2026-01-27 13:40:39 - project - INFO - 종료 신호 감지
+2026-01-27 13:40:39 - project - INFO - 시스템 종료 중...
+2026-01-27 13:40:40 - project - INFO - === Person Detection System 종료 ===
+2026-01-27 16:20:24 - project - INFO - === Person Detection System 시작 ===
+2026-01-27 16:20:24 - project - INFO - YOLO 모델 로드 중: C:\Users\User\Desktop\MinSung\python\project\models\person_detect_v4.pt
+2026-01-27 16:20:25 - project - INFO - 모델 로드 완료
+2026-01-27 16:20:25 - project - INFO - 카메라 초기화 중 (인덱스: 0)
+2026-01-27 16:20:59 - project - INFO - 카메라 초기화 완료
+2026-01-27 16:20:59 - project - INFO - 캡처 및 추론 스레드 시작
+2026-01-27 16:20:59 - project - INFO - 메인 루프 시작 (종료: 'q' 키)
+2026-01-27 16:21:54 - project - INFO - 종료 신호 감지
+2026-01-27 16:21:54 - project - INFO - 시스템 종료 중...
+2026-01-27 16:21:55 - project - INFO - === Person Detection System 종료 ===

@@ -1,0 +1,583 @@
+2026-02-06 15:15:43 - INFO - {"module": "main_orchestrator", "event": "SYSTEM_START", "timestamp": "2026-02-06T15:15:43.772988", "message": "Person Detection System 시작"}
+2026-02-06 15:15:43 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-06T15:15:43.773988", "message": "YOLO 모델 로드 중", "data": {"model_path": "C:\\Users\\User\\Desktop\\MinSung\\python\\project\\models\\person_detect_v4.pt"}}
+2026-02-06 15:15:43 - ERROR - {"module": "vision.yolo_infer", "event": "ERROR_OCCURRED", "timestamp": "2026-02-06T15:15:43.774989", "message": "ultralytics 패키지가 설치되지 않음"}
+2026-02-06 15:15:43 - ERROR - {"module": "main_orchestrator", "event": "ERROR_OCCURRED", "timestamp": "2026-02-06T15:15:43.774989", "message": "YOLO 모델 로드 실패", "data": {"error": "ultralytics 패키지가 설치되지 않았습니다."}}
+Traceback (most recent call last):
+  File "C:\Users\User\Desktop\MinSung\python\project\main.py", line 30, in main
+    yolo_model = YOLOInference(MODEL_PATH, CONFIDENCE_THRESHOLD, IMAGE_SIZE)
+  File "C:\Users\User\Desktop\MinSung\python\project\vision\yolo_infer.py", line 29, in __init__
+    raise ImportError("ultralytics 패키지가 설치되지 않았습니다.")
+ImportError: ultralytics 패키지가 설치되지 않았습니다.
+2026-02-06 15:16:50 - INFO - {"module": "main_orchestrator", "event": "SYSTEM_START", "timestamp": "2026-02-06T15:16:50.104735", "message": "Person Detection System 시작"}
+2026-02-06 15:16:50 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-06T15:16:50.105736", "message": "YOLO 모델 로드 중", "data": {"model_path": "C:\\Users\\User\\Desktop\\MinSung\\python\\project\\models\\person_detect_v4.pt"}}
+2026-02-06 15:16:50 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_INIT", "timestamp": "2026-02-06T15:16:50.105736", "message": "YOLO 모델 초기화 시작", "data": {"model_path": "C:\\Users\\User\\Desktop\\MinSung\\python\\project\\models\\person_detect_v4.pt", "conf": 0.5, "imgsz": 640}}
+2026-02-06 15:16:50 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_INIT", "timestamp": "2026-02-06T15:16:50.228736", "message": "YOLO 모델 초기화 완료", "data": {"num_classes": 1}}
+2026-02-06 15:16:50 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-06T15:16:50.229736", "message": "YOLO 모델 로드 완료"}
+2026-02-06 15:16:50 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-06T15:16:50.229736", "message": "카메라 초기화 중", "data": {"camera_index": 0}}
+2026-02-06 15:16:50 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-06T15:16:50.230738", "message": "CameraCapture 시작", "data": {"camera_index": 0}}
+2026-02-06 15:16:50 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-06T15:16:50.230738", "message": "카메라 열기 시도", "data": {"camera_index": 0, "max_retries": 10}}
+2026-02-06 15:16:51 - INFO - {"module": "hardware.camera", "event": "CAMERA_OPEN", "timestamp": "2026-02-06T15:16:51.299221", "message": "카메라 연결 성공", "data": {"camera_index": 0}}
+2026-02-06 15:16:51 - INFO - {"module": "hardware.camera", "event": "STATE_CHANGE", "timestamp": "2026-02-06T15:16:51.300221", "message": "CameraCapture 상태 변경", "data": {"running": true}}
+2026-02-06 15:16:51 - INFO - {"module": "main_orchestrator", "event": "CAMERA_OPEN", "timestamp": "2026-02-06T15:16:51.300221", "message": "카메라 초기화 완료"}
+2026-02-06 15:16:51 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-06T15:16:51.302222", "message": "캡처 루프 시작"}
+2026-02-06 15:16:51 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-06T15:16:51.303222", "message": "추론 루프 시작", "data": {"infer_stride": 3}}
+2026-02-06 15:16:51 - INFO - {"module": "main_orchestrator", "event": "MODULE_START", "timestamp": "2026-02-06T15:16:51.303222", "message": "캡처 및 추론 스레드 시작", "data": {"threads": ["capture", "inference"]}}
+2026-02-06 15:16:51 - INFO - {"module": "main_orchestrator", "event": "STATE_CHANGE", "timestamp": "2026-02-06T15:16:51.306221", "message": "메인 루프 시작", "data": {"exit_key": "q"}}
+2026-02-06 15:16:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:52.179220", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:52.288221", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:52.389220", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:52.509221", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:52.619221", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:52.727222", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:52.856222", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:52.963221", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:53 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:53.063220", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:53 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:53.160221", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:53 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:53.262224", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:53 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:53.371219", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:53 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:53.470220", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:53 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:53.579220", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:53 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:53.683220", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:53 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:53.786222", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:53 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:53.899222", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:54 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:54.024221", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:54 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:54.122221", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:54 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:54.224220", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:54 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:54.328220", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:54 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:54.437221", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:54 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:54.539220", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:54 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:54.638223", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:54 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:54.813220", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:55 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:55.011221", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:55 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:55.211220", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:55 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:55.423221", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:55 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:55.609219", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:55 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:55.825222", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:56 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:56.011220", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:56 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:56.234743", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:56 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:56.403745", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:56 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:56.620266", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:56 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:56.747265", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:56 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:56.850263", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:56 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:56.956264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:57.060267", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:57.157266", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:57.252264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:57.364266", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:57.474266", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:57.581264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:57.679263", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:57.784265", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:57.885267", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:57.987264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:58 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:58.095267", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:58 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:58.195264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:58 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:58.293265", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:58 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:58.390266", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:58 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:58.506265", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:58 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:58.618264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:58 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:58.719264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:58 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:58.820264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:58 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:58.928266", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:59.030265", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:59.135263", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:59.235266", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:59.335264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:59.436263", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:59.537268", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:59.670268", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:59.774264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:59.877264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:16:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:16:59.975265", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:00 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:00.084264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:00 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:00.265265", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:00 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:00.367265", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:00 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:00.466264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:00 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:00.566265", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:00 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:00.677266", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:00 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:00.798264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:00 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:00.898264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:01 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:01.002264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:01 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:01.103263", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:01 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:01.213267", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:01 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:01.315264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:01 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:01.419264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:01 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:01.519265", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:01 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:01.644265", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:01 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:01.754265", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:01 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:01.873265", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:01 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:01.987264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:02 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:02.086264", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:02 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:02.191789", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:02 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:02.352794", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:02 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:02.486790", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:02 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:02.600789", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:02 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:02.707789", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:02 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:02.821790", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-06 15:17:02 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:02.925789", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-06 15:17:03 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:03.039790", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-06 15:17:03 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:03.145314", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:03 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:03.256835", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:03 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:03.367834", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:03 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:03.475836", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:03 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:03.574835", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:03 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:03.677837", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:03 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:03.780836", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:03 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:03.901835", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:04 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:04.001835", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:04 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:04.115835", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:04 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-06T15:17:04.177837", "message": "종료 신호 감지", "data": {"key": "q"}}
+2026-02-06 15:17:04 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:04.223835", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:04 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:04.308834", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:04 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:04.400841", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:04 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:04.499835", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:04 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:04.614836", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:04 - INFO - {"module": "main_orchestrator", "event": "MODULE_STOP", "timestamp": "2026-02-06T15:17:04.680836", "message": "시스템 종료 프로세스 시작"}
+2026-02-06 15:17:04 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-06T15:17:04.708836", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-06 15:17:04 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-06T15:17:04.709836", "message": "추론 루프 종료", "data": {"total_inferences": 109}}
+2026-02-06 15:17:04 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-06T15:17:04.711836", "message": "캡처 루프 종료", "data": {"total_frames": 367}}
+2026-02-06 15:17:04 - INFO - {"module": "hardware.camera", "event": "MODULE_STOP", "timestamp": "2026-02-06T15:17:04.711836", "message": "CameraCapture 종료", "data": {"camera_index": 0}}
+2026-02-06 15:17:04 - INFO - {"module": "main_orchestrator", "event": "CAMERA_CLOSE", "timestamp": "2026-02-06T15:17:04.994838", "message": "카메라 리소스 해제"}
+2026-02-06 15:17:05 - INFO - {"module": "main_orchestrator", "event": "SYSTEM_STOP", "timestamp": "2026-02-06T15:17:05.064837", "message": "Person Detection System 종료 완료"}
+2026-02-08 15:31:38 - INFO - {"module": "main_orchestrator", "event": "SYSTEM_START", "timestamp": "2026-02-08T15:31:38.368710", "message": "Person Detection System 시작"}
+2026-02-08 15:31:38 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:31:38.369709", "message": "YOLO 모델 로드 중", "data": {"model_path": "C:\\Users\\User\\Desktop\\MinSung\\python\\project\\models\\person_detect_v4.pt"}}
+2026-02-08 15:31:38 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:31:38.370706", "message": "YOLO 모델 초기화 시작", "data": {"model_path": "C:\\Users\\User\\Desktop\\MinSung\\python\\project\\models\\person_detect_v4.pt", "conf": 0.5, "imgsz": 640}}
+2026-02-08 15:31:38 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:31:38.572705", "message": "YOLO 모델 초기화 완료", "data": {"num_classes": 1}}
+2026-02-08 15:31:38 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:31:38.572705", "message": "YOLO 모델 로드 완료"}
+2026-02-08 15:31:38 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:31:38.573707", "message": "카메라 초기화 중", "data": {"camera_index": 0, "available_cameras": [0, 1]}}
+2026-02-08 15:31:38 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:31:38.574706", "message": "CameraCapture 시작", "data": {"camera_index": 0}}
+2026-02-08 15:31:38 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:31:38.574706", "message": "카메라 열기 시도", "data": {"camera_index": 0, "max_retries": 10}}
+2026-02-08 15:31:39 - INFO - {"module": "hardware.camera", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:31:39.907622", "message": "카메라 연결 성공", "data": {"camera_index": 0}}
+2026-02-08 15:31:39 - INFO - {"module": "hardware.camera", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:31:39.908620", "message": "CameraCapture 상태 변경", "data": {"running": true}}
+2026-02-08 15:31:39 - INFO - {"module": "main_orchestrator", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:31:39.909621", "message": "카메라 초기화 완료"}
+2026-02-08 15:31:39 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:31:39.911619", "message": "캡처 루프 시작"}
+2026-02-08 15:31:39 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:31:39.912620", "message": "추론 루프 시작", "data": {"infer_stride": 3}}
+2026-02-08 15:31:39 - INFO - {"module": "main_orchestrator", "event": "MODULE_START", "timestamp": "2026-02-08T15:31:39.912620", "message": "캡처 및 추론 스레드 시작", "data": {"threads": ["capture", "inference"]}}
+2026-02-08 15:31:39 - INFO - {"module": "main_orchestrator", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:31:39.915621", "message": "메인 루프 시작", "data": {"exit_key": "q", "camera_switch_key": "c"}}
+2026-02-08 15:31:40 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:40.972620", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:41 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:41.173619", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:41 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:41.306620", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:41 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:41.583126", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:41 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:41.978545", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:42 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:42.445485", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:42 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:42.790067", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:43 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:43.173446", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:43 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:43.601445", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:44 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:44.032109", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:44 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:44.277111", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:44 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:44.605109", "message": "객체 탐지 완료", "data": {"num_detections": 2}}
+2026-02-08 15:31:44 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:44.740110", "message": "객체 탐지 완료", "data": {"num_detections": 2}}
+2026-02-08 15:31:44 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:44.894109", "message": "객체 탐지 완료", "data": {"num_detections": 2}}
+2026-02-08 15:31:45 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:45.023109", "message": "객체 탐지 완료", "data": {"num_detections": 3}}
+2026-02-08 15:31:45 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:45.156109", "message": "객체 탐지 완료", "data": {"num_detections": 2}}
+2026-02-08 15:31:45 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:45.382110", "message": "객체 탐지 완료", "data": {"num_detections": 2}}
+2026-02-08 15:31:45 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:45.523117", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:46 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:46.563383", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:47 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:47.502382", "message": "객체 탐지 완료", "data": {"num_detections": 2}}
+2026-02-08 15:31:48 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:48.523921", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:48 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:48.899519", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:49 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:49.581168", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:49 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:49.710169", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:49 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:49.871168", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:50 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:50.020169", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:50 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:50.148169", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:50 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:50.300168", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:50 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:50.450171", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:50 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:50.615171", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:50 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:50.747169", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:50 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:50.880168", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:51 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:51.024169", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:51 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:51.155168", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:51 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:51.289171", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:51 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:51.435913", "message": "객체 탐지 완료", "data": {"num_detections": 2}}
+2026-02-08 15:31:51 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:51.601912", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:51 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:51.791914", "message": "객체 탐지 완료", "data": {"num_detections": 2}}
+2026-02-08 15:31:51 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:51.922912", "message": "객체 탐지 완료", "data": {"num_detections": 2}}
+2026-02-08 15:31:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:52.052914", "message": "객체 탐지 완료", "data": {"num_detections": 2}}
+2026-02-08 15:31:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:52.172912", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:52.307915", "message": "객체 탐지 완료", "data": {"num_detections": 2}}
+2026-02-08 15:31:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:52.444912", "message": "객체 탐지 완료", "data": {"num_detections": 2}}
+2026-02-08 15:31:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:52.578912", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:52.699914", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:52.836912", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:52 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:52.975913", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:53 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:53.113914", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:53 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:53.236913", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:53 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:53.471301", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:53 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:53.765301", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:54 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:54.166302", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:54 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:54.555300", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:54 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:54.825304", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:55 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:55.051301", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:55 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:31:55.156301", "message": "카메라 전환 요청", "data": {"key": "c", "current_camera": 0}}
+2026-02-08 15:31:55 - INFO - {"module": "main_orchestrator", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:31:55.159301", "message": "카메라 전환 시작", "data": {"from": 0, "to": 1}}
+2026-02-08 15:31:55 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:31:55.174301", "message": "캡처 루프 종료", "data": {"total_frames": 343}}
+2026-02-08 15:31:55 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:55.280301", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:31:55 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:31:55.281301", "message": "추론 루프 종료", "data": {"total_inferences": 56}}
+2026-02-08 15:31:55 - INFO - {"module": "hardware.camera", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:31:55.281301", "message": "CameraCapture 종료", "data": {"camera_index": 0}}
+2026-02-08 15:31:55 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:31:55.545303", "message": "CameraCapture 시작", "data": {"camera_index": 1}}
+2026-02-08 15:31:55 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:31:55.546304", "message": "카메라 열기 시도", "data": {"camera_index": 1, "max_retries": 10}}
+2026-02-08 15:31:56 - INFO - {"module": "hardware.camera", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:31:56.146873", "message": "카메라 연결 성공", "data": {"camera_index": 1}}
+2026-02-08 15:31:56 - INFO - {"module": "hardware.camera", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:31:56.147874", "message": "CameraCapture 상태 변경", "data": {"running": true}}
+2026-02-08 15:31:56 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:31:56.148875", "message": "캡처 루프 시작"}
+2026-02-08 15:31:56 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:31:56.149876", "message": "추론 루프 시작", "data": {"infer_stride": 3}}
+2026-02-08 15:31:56 - INFO - {"module": "main_orchestrator", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:31:56.149876", "message": "카메라 전환 완료", "data": {"camera_index": 1}}
+2026-02-08 15:31:56 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:56.424162", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:56 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:56.609801", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:56 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:56.732802", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:56 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:56.851802", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:56 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:56.993802", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:57.182801", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:57.510802", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:57.637802", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:57.794802", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:57 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:57.987801", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:58 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:58.227803", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:58 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:58.436801", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:58 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:58.702804", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:58 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:58.832801", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:58 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:58.987813", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:59.154802", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:59.275802", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:59.430804", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:59.554801", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:59.684805", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:59.839802", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:31:59 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:31:59.967802", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:00 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:00.098803", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:00 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:00.236801", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:00 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:32:00.272802", "message": "카메라 전환 요청", "data": {"key": "c", "current_camera": 1}}
+2026-02-08 15:32:00 - INFO - {"module": "main_orchestrator", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:32:00.273802", "message": "카메라 전환 시작", "data": {"from": 1, "to": 0}}
+2026-02-08 15:32:00 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:00.295802", "message": "캡처 루프 종료", "data": {"total_frames": 89}}
+2026-02-08 15:32:00 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:00.359801", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:00 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:00.360803", "message": "추론 루프 종료", "data": {"total_inferences": 25}}
+2026-02-08 15:32:00 - INFO - {"module": "hardware.camera", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:00.360803", "message": "CameraCapture 종료", "data": {"camera_index": 1}}
+2026-02-08 15:32:00 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:00.634801", "message": "CameraCapture 시작", "data": {"camera_index": 0}}
+2026-02-08 15:32:00 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:00.635802", "message": "카메라 열기 시도", "data": {"camera_index": 0, "max_retries": 10}}
+2026-02-08 15:32:01 - INFO - {"module": "hardware.camera", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:32:01.286803", "message": "카메라 연결 성공", "data": {"camera_index": 0}}
+2026-02-08 15:32:01 - INFO - {"module": "hardware.camera", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:32:01.287805", "message": "CameraCapture 상태 변경", "data": {"running": true}}
+2026-02-08 15:32:01 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:01.289803", "message": "캡처 루프 시작"}
+2026-02-08 15:32:01 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:01.290802", "message": "추론 루프 시작", "data": {"infer_stride": 3}}
+2026-02-08 15:32:01 - INFO - {"module": "main_orchestrator", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:32:01.290802", "message": "카메라 전환 완료", "data": {"camera_index": 0}}
+2026-02-08 15:32:01 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:01.619507", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:01 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:01.807507", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:02 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:02.181508", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:02 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:02.512507", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:02 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:02.912508", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:03 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:03.374507", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:03 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:03.726877", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:04 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:04.125878", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:04 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:04.535875", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:04 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:04.913829", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:05 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:05.402419", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:05 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:05.710470", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:06 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:06.110857", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:06 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:06.514464", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:06 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:06.911466", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:07 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:07.326465", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:07 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:07.729466", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:08 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:08.123465", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:08 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:08.513464", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:08 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:08.984464", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:09 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:09.178464", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:09 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:09.414464", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:09 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:09.543465", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:09 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:09.673466", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:09 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:09.850464", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:10 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:10.229464", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:10 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:10.676465", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:11 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:11.019464", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:11 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:11.453464", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:11 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:11.840287", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:12 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:12.298286", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:12 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:12.508283", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:12 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:12.631286", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:12 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:12.754286", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:12 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:12.892284", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:13.030286", "message": "객체 탐지 완료", "data": {"num_detections": 2}}
+2026-02-08 15:32:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:13.158285", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:13.279284", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:13.437284", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:13.593285", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:13.726285", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:13.862285", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:13.999286", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:14 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:14.122284", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:14 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:14.251284", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:14 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:14.399284", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:14 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:14.549285", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:14 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:14.704284", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:14 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:14.827285", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:14 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:14.956284", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:15 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:15.091285", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:15 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:15.221285", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:15 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:15.362286", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:15 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:15.508283", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:15 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:15.661285", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:15 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:15.836937", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:15 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:15.974937", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:16 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:16.102935", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:16 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:16.230936", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:16 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:16.416870", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:16 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:16.549867", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:16 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:16.675868", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:16 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:32:16.759868", "message": "카메라 전환 요청", "data": {"key": "c", "current_camera": 0}}
+2026-02-08 15:32:16 - INFO - {"module": "main_orchestrator", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:32:16.760869", "message": "카메라 전환 시작", "data": {"from": 0, "to": 1}}
+2026-02-08 15:32:16 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:16.780869", "message": "캡처 루프 종료", "data": {"total_frames": 229}}
+2026-02-08 15:32:16 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:16.799870", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:16 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:16.800869", "message": "추론 루프 종료", "data": {"total_inferences": 63}}
+2026-02-08 15:32:16 - INFO - {"module": "hardware.camera", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:16.800869", "message": "CameraCapture 종료", "data": {"camera_index": 0}}
+2026-02-08 15:32:17 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:17.073868", "message": "CameraCapture 시작", "data": {"camera_index": 1}}
+2026-02-08 15:32:17 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:17.074868", "message": "카메라 열기 시도", "data": {"camera_index": 1, "max_retries": 10}}
+2026-02-08 15:32:17 - INFO - {"module": "hardware.camera", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:32:17.700870", "message": "카메라 연결 성공", "data": {"camera_index": 1}}
+2026-02-08 15:32:17 - INFO - {"module": "hardware.camera", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:32:17.701870", "message": "CameraCapture 상태 변경", "data": {"running": true}}
+2026-02-08 15:32:17 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:17.702869", "message": "캡처 루프 시작"}
+2026-02-08 15:32:17 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:17.703869", "message": "추론 루프 시작", "data": {"infer_stride": 3}}
+2026-02-08 15:32:17 - INFO - {"module": "main_orchestrator", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:32:17.703869", "message": "카메라 전환 완료", "data": {"camera_index": 1}}
+2026-02-08 15:32:17 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:17.889868", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:18 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:18.088869", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:18 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:18.229868", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:18 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:18.424869", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:18 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:18.545871", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:18 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:18.719869", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:18 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:32:18.798869", "message": "카메라 전환 요청", "data": {"key": "c", "current_camera": 1}}
+2026-02-08 15:32:18 - INFO - {"module": "main_orchestrator", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:32:18.799869", "message": "카메라 전환 시작", "data": {"from": 1, "to": 0}}
+2026-02-08 15:32:18 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:18.825871", "message": "캡처 루프 종료", "data": {"total_frames": 27}}
+2026-02-08 15:32:18 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:18.902869", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:18 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:18.903868", "message": "추론 루프 종료", "data": {"total_inferences": 7}}
+2026-02-08 15:32:18 - INFO - {"module": "hardware.camera", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:18.904868", "message": "CameraCapture 종료", "data": {"camera_index": 1}}
+2026-02-08 15:32:19 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:19.197500", "message": "CameraCapture 시작", "data": {"camera_index": 0}}
+2026-02-08 15:32:19 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:19.197500", "message": "카메라 열기 시도", "data": {"camera_index": 0, "max_retries": 10}}
+2026-02-08 15:32:19 - INFO - {"module": "hardware.camera", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:32:19.809494", "message": "카메라 연결 성공", "data": {"camera_index": 0}}
+2026-02-08 15:32:19 - INFO - {"module": "hardware.camera", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:32:19.810493", "message": "CameraCapture 상태 변경", "data": {"running": true}}
+2026-02-08 15:32:19 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:19.811493", "message": "캡처 루프 시작"}
+2026-02-08 15:32:19 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:19.811493", "message": "추론 루프 시작", "data": {"infer_stride": 3}}
+2026-02-08 15:32:19 - INFO - {"module": "main_orchestrator", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:32:19.812494", "message": "카메라 전환 완료", "data": {"camera_index": 0}}
+2026-02-08 15:32:19 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:19.973493", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:20 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:20.151492", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:20 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:20.390493", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:20 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:20.508492", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:20 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:32:20.599492", "message": "카메라 전환 요청", "data": {"key": "c", "current_camera": 0}}
+2026-02-08 15:32:20 - INFO - {"module": "main_orchestrator", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:32:20.600492", "message": "카메라 전환 시작", "data": {"from": 0, "to": 1}}
+2026-02-08 15:32:20 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:20.614492", "message": "캡처 루프 종료", "data": {"total_frames": 23}}
+2026-02-08 15:32:20 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:20.636492", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:20 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:20.637492", "message": "추론 루프 종료", "data": {"total_inferences": 5}}
+2026-02-08 15:32:20 - INFO - {"module": "hardware.camera", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:20.638492", "message": "CameraCapture 종료", "data": {"camera_index": 0}}
+2026-02-08 15:32:20 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:20.912494", "message": "CameraCapture 시작", "data": {"camera_index": 1}}
+2026-02-08 15:32:20 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:20.912494", "message": "카메라 열기 시도", "data": {"camera_index": 1, "max_retries": 10}}
+2026-02-08 15:32:21 - INFO - {"module": "hardware.camera", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:32:21.560161", "message": "카메라 연결 성공", "data": {"camera_index": 1}}
+2026-02-08 15:32:21 - INFO - {"module": "hardware.camera", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:32:21.561162", "message": "CameraCapture 상태 변경", "data": {"running": true}}
+2026-02-08 15:32:21 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:21.562168", "message": "캡처 루프 시작"}
+2026-02-08 15:32:21 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:32:21.563163", "message": "추론 루프 시작", "data": {"infer_stride": 3}}
+2026-02-08 15:32:21 - INFO - {"module": "main_orchestrator", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:32:21.563163", "message": "카메라 전환 완료", "data": {"camera_index": 1}}
+2026-02-08 15:32:21 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:21.795161", "message": "객체 탐지 완료", "data": {"num_detections": 1}}
+2026-02-08 15:32:21 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:21.951162", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:22 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:22.113161", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:22 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:22.341162", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:22 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:22.559161", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:22 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:22.762163", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:22 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:22.927160", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:23 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:23.116163", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:23 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:23.311162", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:23 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:23.528161", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:23 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:23.761160", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:24 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:24.009161", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:24 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:24.153161", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:24 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:24.344163", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:24 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:24.525161", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:24 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:24.722160", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:24 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:24.943166", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:25 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:25.118161", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:25 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:25.315162", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:25 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:25.519161", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:25 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:25.712161", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:25 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:25.954330", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:26 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:32:26.023329", "message": "종료 신호 감지", "data": {"key": "q"}}
+2026-02-08 15:32:26 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:26.139328", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:26 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:26.308332", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:26 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:32:26.492328", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:32:26 - INFO - {"module": "main_orchestrator", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:26.526330", "message": "시스템 종료 프로세스 시작"}
+2026-02-08 15:32:26 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:26.527330", "message": "추론 루프 종료", "data": {"total_inferences": 25}}
+2026-02-08 15:32:26 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:26.604476", "message": "캡처 루프 종료", "data": {"total_frames": 75}}
+2026-02-08 15:32:26 - INFO - {"module": "hardware.camera", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:32:26.605477", "message": "CameraCapture 종료", "data": {"camera_index": 1}}
+2026-02-08 15:32:26 - INFO - {"module": "main_orchestrator", "event": "CAMERA_CLOSE", "timestamp": "2026-02-08T15:32:26.881478", "message": "카메라 리소스 해제"}
+2026-02-08 15:32:26 - INFO - {"module": "main_orchestrator", "event": "SYSTEM_STOP", "timestamp": "2026-02-08T15:32:26.922479", "message": "Person Detection System 종료 완료"}
+2026-02-08 15:44:06 - INFO - {"module": "main_orchestrator", "event": "SYSTEM_START", "timestamp": "2026-02-08T15:44:06.278838", "message": "Person Detection System 시작"}
+2026-02-08 15:44:06 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:44:06.279836", "message": "YOLO 모델 로드 중", "data": {"model_path": "C:\\Users\\User\\Desktop\\MinSung\\python\\project\\models\\person_detect_v4.pt"}}
+2026-02-08 15:44:06 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:44:06.280837", "message": "YOLO 모델 초기화 시작", "data": {"model_path": "C:\\Users\\User\\Desktop\\MinSung\\python\\project\\models\\person_detect_v4.pt", "conf": 0.5, "imgsz": 640}}
+2026-02-08 15:44:06 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:44:06.348436", "message": "YOLO 모델 초기화 완료", "data": {"num_classes": 1}}
+2026-02-08 15:44:06 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:44:06.349439", "message": "YOLO 모델 로드 완료"}
+2026-02-08 15:44:06 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:44:06.349439", "message": "카메라 0 초기화 중"}
+2026-02-08 15:44:06 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:44:06.350437", "message": "CameraCapture 시작", "data": {"camera_index": 0}}
+2026-02-08 15:44:06 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:44:06.351435", "message": "카메라 열기 시도", "data": {"camera_index": 0, "max_retries": 10}}
+2026-02-08 15:44:10 - INFO - {"module": "hardware.camera", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:44:10.847268", "message": "카메라 연결 성공", "data": {"camera_index": 0}}
+2026-02-08 15:44:10 - INFO - {"module": "hardware.camera", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:44:10.848267", "message": "CameraCapture 상태 변경", "data": {"running": true}}
+2026-02-08 15:44:10 - INFO - {"module": "main_orchestrator", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:44:10.849267", "message": "카메라 0 초기화 완료"}
+2026-02-08 15:44:10 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:44:10.850267", "message": "카메라 1 초기화 중"}
+2026-02-08 15:44:10 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:44:10.850267", "message": "CameraCapture 시작", "data": {"camera_index": 1}}
+2026-02-08 15:44:10 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:44:10.851269", "message": "카메라 열기 시도", "data": {"camera_index": 1, "max_retries": 10}}
+2026-02-08 15:44:11 - INFO - {"module": "hardware.camera", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:44:11.509975", "message": "카메라 연결 성공", "data": {"camera_index": 1}}
+2026-02-08 15:44:11 - INFO - {"module": "hardware.camera", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:44:11.509975", "message": "CameraCapture 상태 변경", "data": {"running": true}}
+2026-02-08 15:44:11 - INFO - {"module": "main_orchestrator", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:44:11.510973", "message": "카메라 1 초기화 완료"}
+2026-02-08 15:44:11 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:44:11.512972", "message": "캡처 루프 시작"}
+2026-02-08 15:44:11 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:44:11.512972", "message": "추론 루프 시작", "data": {"infer_stride": 3}}
+2026-02-08 15:44:11 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:44:11.513974", "message": "캡처 루프 시작"}
+2026-02-08 15:44:11 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:44:11.514973", "message": "추론 루프 시작", "data": {"infer_stride": 3}}
+2026-02-08 15:44:11 - INFO - {"module": "main_orchestrator", "event": "MODULE_START", "timestamp": "2026-02-08T15:44:11.515972", "message": "2개 카메라 스레드 시작 완료"}
+2026-02-08 15:44:11 - INFO - {"module": "main_orchestrator", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:44:11.516972", "message": "메인 루프 시작", "data": {"exit_key": "q", "num_cameras": 2}}
+2026-02-08 15:44:12 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:12.607188", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:12 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:12.766189", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:12 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:12.908187", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:13.036190", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:13.222188", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:13.351188", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:13.466715", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:13.614581", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:13.727581", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:13.835583", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:13 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:13.960580", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:14 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:14.135580", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:14 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:14.255582", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:14 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:14.392580", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:14 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:14.561582", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:14 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:14.689582", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:14 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:14.834581", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:14 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:14.961581", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:15 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:15.089583", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:15 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:15.211580", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:15 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:15.345581", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:15 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:15.529642", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:15 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:15.694643", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:15 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:15.820273", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:15 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:15.944272", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:16 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:16.079272", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:16 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:44:16.173272", "message": "종료 신호 감지", "data": {"key": "q"}}
+2026-02-08 15:44:16 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:16.201270", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:16 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:16.303271", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:16 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:16.437884", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:16 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:16.627885", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:16 - INFO - {"module": "main_orchestrator", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:44:16.674884", "message": "시스템 종료 프로세스 시작"}
+2026-02-08 15:44:16 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:44:16.675885", "message": "추론 루프 종료", "data": {"total_inferences": 19}}
+2026-02-08 15:44:16 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:44:16.682883", "message": "캡처 루프 종료", "data": {"total_frames": 77}}
+2026-02-08 15:44:16 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:44:16.752882", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:44:16 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:44:16.753882", "message": "추론 루프 종료", "data": {"total_inferences": 12}}
+2026-02-08 15:44:16 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:44:16.771882", "message": "캡처 루프 종료", "data": {"total_frames": 41}}
+2026-02-08 15:44:16 - INFO - {"module": "hardware.camera", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:44:16.772883", "message": "CameraCapture 종료", "data": {"camera_index": 0}}
+2026-02-08 15:44:17 - INFO - {"module": "main_orchestrator", "event": "CAMERA_CLOSE", "timestamp": "2026-02-08T15:44:17.056884", "message": "카메라 0 리소스 해제"}
+2026-02-08 15:44:17 - INFO - {"module": "hardware.camera", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:44:17.057884", "message": "CameraCapture 종료", "data": {"camera_index": 1}}
+2026-02-08 15:44:17 - INFO - {"module": "main_orchestrator", "event": "CAMERA_CLOSE", "timestamp": "2026-02-08T15:44:17.343884", "message": "카메라 1 리소스 해제"}
+2026-02-08 15:44:17 - INFO - {"module": "main_orchestrator", "event": "SYSTEM_STOP", "timestamp": "2026-02-08T15:44:17.384884", "message": "Person Detection System 종료 완료"}
+2026-02-08 15:46:03 - INFO - {"module": "main_orchestrator", "event": "SYSTEM_START", "timestamp": "2026-02-08T15:46:03.340032", "message": "Person Detection System 시작"}
+2026-02-08 15:46:03 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:46:03.341033", "message": "YOLO 모델 로드 중", "data": {"model_path": "C:\\Users\\User\\Desktop\\MinSung\\python\\project\\models\\person_detect_v4.pt"}}
+2026-02-08 15:46:03 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:46:03.342033", "message": "YOLO 모델 초기화 시작", "data": {"model_path": "C:\\Users\\User\\Desktop\\MinSung\\python\\project\\models\\person_detect_v4.pt", "conf": 0.5, "imgsz": 640}}
+2026-02-08 15:46:03 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:46:03.403030", "message": "YOLO 모델 초기화 완료", "data": {"num_classes": 1}}
+2026-02-08 15:46:03 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:46:03.403030", "message": "YOLO 모델 로드 완료"}
+2026-02-08 15:46:03 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:46:03.404031", "message": "카메라 0 초기화 중"}
+2026-02-08 15:46:03 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:46:03.405032", "message": "CameraCapture 시작", "data": {"camera_index": 0}}
+2026-02-08 15:46:03 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:46:03.405032", "message": "카메라 열기 시도", "data": {"camera_index": 0, "max_retries": 10}}
+2026-02-08 15:46:04 - INFO - {"module": "hardware.camera", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:46:04.172552", "message": "카메라 연결 성공", "data": {"camera_index": 0}}
+2026-02-08 15:46:04 - INFO - {"module": "hardware.camera", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:46:04.173554", "message": "CameraCapture 상태 변경", "data": {"running": true}}
+2026-02-08 15:46:04 - INFO - {"module": "main_orchestrator", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:46:04.174555", "message": "카메라 0 초기화 완료"}
+2026-02-08 15:46:04 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-02-08T15:46:04.175553", "message": "카메라 1 초기화 중"}
+2026-02-08 15:46:04 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:46:04.175553", "message": "CameraCapture 시작", "data": {"camera_index": 1}}
+2026-02-08 15:46:04 - INFO - {"module": "hardware.camera", "event": "MODULE_START", "timestamp": "2026-02-08T15:46:04.176554", "message": "카메라 열기 시도", "data": {"camera_index": 1, "max_retries": 10}}
+2026-02-08 15:46:04 - INFO - {"module": "hardware.camera", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:46:04.845281", "message": "카메라 연결 성공", "data": {"camera_index": 1}}
+2026-02-08 15:46:04 - INFO - {"module": "hardware.camera", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:46:04.846278", "message": "CameraCapture 상태 변경", "data": {"running": true}}
+2026-02-08 15:46:04 - INFO - {"module": "main_orchestrator", "event": "CAMERA_OPEN", "timestamp": "2026-02-08T15:46:04.847278", "message": "카메라 1 초기화 완료"}
+2026-02-08 15:46:04 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:46:04.849277", "message": "캡처 루프 시작"}
+2026-02-08 15:46:04 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:46:04.849277", "message": "추론 루프 시작", "data": {"infer_stride": 3}}
+2026-02-08 15:46:04 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:46:04.851281", "message": "캡처 루프 시작"}
+2026-02-08 15:46:04 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_START", "timestamp": "2026-02-08T15:46:04.852278", "message": "추론 루프 시작", "data": {"infer_stride": 3}}
+2026-02-08 15:46:04 - INFO - {"module": "main_orchestrator", "event": "MODULE_START", "timestamp": "2026-02-08T15:46:04.853280", "message": "2개 카메라 스레드 시작 완료"}
+2026-02-08 15:46:04 - INFO - {"module": "main_orchestrator", "event": "STATE_CHANGE", "timestamp": "2026-02-08T15:46:04.855280", "message": "메인 루프 시작", "data": {"exit_key": "q", "switch_key": "c", "num_cameras": 2}}
+2026-02-08 15:46:05 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:05.799479", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:05 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:05.962479", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:06 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:06.102480", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:06 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:06.303481", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:06 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:06.465680", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:06 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:06.573681", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:06 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:06.683680", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:06 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:06.789679", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:06 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:06.906680", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:07 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:07.022680", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:07 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:07.139683", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:07 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:07.271681", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:07 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:07.415681", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:07 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:46:07.475683", "message": "카메라 전환", "data": {"key": "c", "camera_index": 1}}
+2026-02-08 15:46:07 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:07.552680", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:07 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:07.662679", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:07 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:07.795680", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:07 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:07.920679", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:07 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:46:07.975680", "message": "카메라 전환", "data": {"key": "c", "camera_index": 0}}
+2026-02-08 15:46:08 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:08.062681", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:08 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:08.186681", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:08 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:08.317679", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:08 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:46:08.406680", "message": "카메라 전환", "data": {"key": "c", "camera_index": 1}}
+2026-02-08 15:46:08 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:08.474680", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:08 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:08.612679", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:08 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:08.725679", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:08 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:46:08.802681", "message": "카메라 전환", "data": {"key": "c", "camera_index": 0}}
+2026-02-08 15:46:08 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:08.870680", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:09 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:09.002681", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:09 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:09.129681", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:09 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:46:09.176680", "message": "카메라 전환", "data": {"key": "c", "camera_index": 1}}
+2026-02-08 15:46:09 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:09.280682", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:09 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:46:09.316681", "message": "카메라 전환", "data": {"key": "c", "camera_index": 0}}
+2026-02-08 15:46:09 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:09.409680", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:09 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:46:09.459680", "message": "카메라 전환", "data": {"key": "c", "camera_index": 1}}
+2026-02-08 15:46:09 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:09.529681", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:09 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:46:09.605680", "message": "카메라 전환", "data": {"key": "c", "camera_index": 0}}
+2026-02-08 15:46:09 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:09.680681", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:09 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:46:09.781680", "message": "카메라 전환", "data": {"key": "c", "camera_index": 1}}
+2026-02-08 15:46:09 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:09.792681", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:09 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:09.914680", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:10 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:10.061681", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:10 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:46:10.121680", "message": "카메라 전환", "data": {"key": "c", "camera_index": 0}}
+2026-02-08 15:46:10 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:10.200682", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:10 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:10.312680", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:10 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:10.460681", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:10 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:10.602681", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:10 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:10.754680", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:10 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:10.931680", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:11 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:11.096682", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:11 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:11.230437", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:11 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:11.342542", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:11 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:11.444538", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:11 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:11.652536", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:11 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:11.763259", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:11 - INFO - {"module": "main_orchestrator", "event": "USER_INPUT", "timestamp": "2026-02-08T15:46:11.847260", "message": "종료 신호 감지", "data": {"key": "q"}}
+2026-02-08 15:46:11 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:11.875262", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:12 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:12.002261", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:12 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:12.126261", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:12 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:12.221259", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:12 - INFO - {"module": "vision.yolo_infer", "event": "DETECTION_RESULT", "timestamp": "2026-02-08T15:46:12.330259", "message": "객체 탐지 완료", "data": {"num_detections": 0}}
+2026-02-08 15:46:12 - INFO - {"module": "main_orchestrator", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:46:12.348259", "message": "시스템 종료 프로세스 시작"}
+2026-02-08 15:46:12 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:46:12.349260", "message": "추론 루프 종료", "data": {"total_inferences": 18}}
+2026-02-08 15:46:12 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:46:12.349260", "message": "추론 루프 종료", "data": {"total_inferences": 32}}
+2026-02-08 15:46:12 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:46:12.353260", "message": "캡처 루프 종료", "data": {"total_frames": 112}}
+2026-02-08 15:46:12 - INFO - {"module": "vision.yolo_infer", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:46:12.482260", "message": "캡처 루프 종료", "data": {"total_frames": 59}}
+2026-02-08 15:46:12 - INFO - {"module": "hardware.camera", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:46:12.483261", "message": "CameraCapture 종료", "data": {"camera_index": 0}}
+2026-02-08 15:46:12 - INFO - {"module": "main_orchestrator", "event": "CAMERA_CLOSE", "timestamp": "2026-02-08T15:46:12.766482", "message": "카메라 0 리소스 해제"}
+2026-02-08 15:46:12 - INFO - {"module": "hardware.camera", "event": "MODULE_STOP", "timestamp": "2026-02-08T15:46:12.767482", "message": "CameraCapture 종료", "data": {"camera_index": 1}}
+2026-02-08 15:46:13 - INFO - {"module": "main_orchestrator", "event": "CAMERA_CLOSE", "timestamp": "2026-02-08T15:46:13.043482", "message": "카메라 1 리소스 해제"}
+2026-02-08 15:46:13 - INFO - {"module": "main_orchestrator", "event": "SYSTEM_STOP", "timestamp": "2026-02-08T15:46:13.080482", "message": "Person Detection System 종료 완료"}
+2026-03-09 23:32:20 - INFO - {"module": "main_orchestrator", "event": "SYSTEM_START", "timestamp": "2026-03-09T23:32:20.477114", "message": "Person Detection System 시작"}
+2026-03-09 23:32:20 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-03-09T23:32:20.478114", "message": "YOLO 모델 로드 중", "data": {"model_path": "C:\\Users\\User\\.codex\\worktrees\\453f\\jetson\\models\\person_detect_v4.pt"}}
+2026-03-09 23:32:20 - ERROR - {"module": "vision.yolo_infer", "event": "ERROR_OCCURRED", "timestamp": "2026-03-09T23:32:20.478114", "message": "ultralytics 패키지가 설치되지 않음"}
+2026-03-09 23:32:20 - ERROR - {"module": "main_orchestrator", "event": "ERROR_OCCURRED", "timestamp": "2026-03-09T23:32:20.479114", "message": "YOLO 모델 로드 실패", "data": {"error": "ultralytics 패키지가 설치되지 않았습니다."}}
+Traceback (most recent call last):
+  File "C:\Users\User\.codex\worktrees\453f\jetson\main.py", line 64, in _init_model
+    model = YOLOInference(MODEL_PATH, CONFIDENCE_THRESHOLD, INFER_IMGSZ)
+  File "C:\Users\User\.codex\worktrees\453f\jetson\ai\model.py", line 30, in __init__
+    raise ImportError("ultralytics 패키지가 설치되지 않았습니다.")
+ImportError: ultralytics 패키지가 설치되지 않았습니다.
+2026-03-09 23:37:32 - INFO - {"module": "main_orchestrator", "event": "SYSTEM_START", "timestamp": "2026-03-09T23:37:32.492267", "message": "Person Detection System 시작"}
+2026-03-09 23:37:32 - INFO - {"module": "main_orchestrator", "event": "MODULE_INIT", "timestamp": "2026-03-09T23:37:32.492267", "message": "YOLO 모델 로드 중", "data": {"model_path": "C:\\Users\\User\\.codex\\worktrees\\453f\\jetson\\models\\person_detect_v4.pt"}}
+2026-03-09 23:37:32 - ERROR - {"module": "vision.yolo_infer", "event": "ERROR_OCCURRED", "timestamp": "2026-03-09T23:37:32.493267", "message": "ultralytics 패키지가 설치되지 않음"}
+2026-03-09 23:37:32 - ERROR - {"module": "main_orchestrator", "event": "ERROR_OCCURRED", "timestamp": "2026-03-09T23:37:32.493267", "message": "YOLO 모델 로드 실패", "data": {"error": "ultralytics 패키지가 설치되지 않았습니다."}}
+Traceback (most recent call last):
+  File "C:\Users\User\.codex\worktrees\453f\jetson\main.py", line 65, in _init_model
+    model = YOLOInference(MODEL_PATH, CONFIDENCE_THRESHOLD, INFER_IMGSZ)
+  File "C:\Users\User\.codex\worktrees\453f\jetson\ai\model.py", line 30, in __init__
+    raise ImportError("ultralytics 패키지가 설치되지 않았습니다.")
+ImportError: ultralytics 패키지가 설치되지 않았습니다.
