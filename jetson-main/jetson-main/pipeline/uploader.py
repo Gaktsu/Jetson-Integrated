@@ -6,10 +6,15 @@ from __future__ import annotations
 import os
 import subprocess
 import time
+import threading
 from datetime import datetime
 from typing import Optional
 
 from config.settings import (
+    EVENT_LOG_COOLDOWN_SEC,
+    EVENT_LOG_ENABLED,
+    EVENT_LOG_TIMEOUT_SEC,
+    EVENT_LOG_URL,
     UPLOAD_DEVICE_ID,
     UPLOAD_DEVICE_KEY,
     UPLOAD_MAX_RETRIES,
@@ -21,6 +26,9 @@ from config.settings import (
 from utils.logger import EventType, get_logger
 
 logger = get_logger("pipeline.uploader")
+
+# 카메라별 마지막 전송 시각 (쿨다운 관리)
+_last_event_log_ts: dict[int, float] = {}
 
 
 def _extract_date(file_path: str) -> str:
@@ -139,3 +147,85 @@ def upload_video_file(file_path: str, date_str: Optional[str] = None) -> bool:
         {"file": file_path, "retries": UPLOAD_MAX_RETRIES},
     )
     return False
+
+
+# ──────────────────────────────────────────────
+# JSON 이벤트 로그 전송 (yolo_test-main send_to_ec2_server 이식)
+# ──────────────────────────────────────────────
+
+def upload_event_log(
+    event_type: str,
+    cam_id: int,
+    speed_level: int,
+    *,
+    blocking: bool = False,
+) -> None:
+    """
+    경고 이벤트 발생 시 JSON 메타데이터를 서버에 전송.
+
+    yolo_test-main/main_system.py의 send_to_ec2_server()를 이식:
+    - 영상 파일 없이 경고 레벨·시각·속도를 JSON으로 즉시 전송
+    - 기본적으로 백그라운드 스레드로 실행되어 추론 루프를 차단하지 않음
+    - 카메라별 쿨다운(EVENT_LOG_COOLDOWN_SEC) 으로 중복 전송 방지
+
+    Args:
+        event_type:  "BLIND_SPOT" | "APPROACH" | "URGENT"
+        cam_id:      카메라 인덱스
+        speed_level: 지게차 속도 레벨 (0~5)
+        blocking:    True 이면 호출 스레드에서 직접 실행 (테스트용)
+    """
+    if not EVENT_LOG_ENABLED:
+        return
+
+    # 쿨다운 체크 (모듈 수준 dict — 스레드 간 충돌 가능성 낮아 Lock 생략)
+    now = time.time()
+    if now - _last_event_log_ts.get(cam_id, 0.0) < EVENT_LOG_COOLDOWN_SEC:
+        return
+    _last_event_log_ts[cam_id] = now
+
+    if blocking:
+        _send_event_log(event_type, cam_id, speed_level)
+    else:
+        threading.Thread(
+            target=_send_event_log,
+            args=(event_type, cam_id, speed_level),
+            daemon=True,
+            name=f"event_log_{cam_id}",
+        ).start()
+
+
+def _send_event_log(event_type: str, cam_id: int, speed_level: int) -> None:
+    """실제 HTTP POST 전송 (백그라운드 스레드에서 호출)."""
+    import json
+    import urllib.request
+    import urllib.error
+
+    payload = {
+        "device_id": UPLOAD_DEVICE_ID,
+        "event_type": event_type,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "cam_id": cam_id,
+        "speed_level": speed_level,
+    }
+
+    try:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            EVENT_LOG_URL,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=EVENT_LOG_TIMEOUT_SEC):
+            pass
+        logger.event_info(
+            EventType.MODULE_STOP,
+            "이벤트 로그 전송 성공",
+            {"event_type": event_type, "cam_id": cam_id, "payload": payload},
+        )
+    except Exception as e:
+        logger.event_error(
+            EventType.ERROR_OCCURRED,
+            "이벤트 로그 전송 실패 (서버 미연결 시 정상)",
+            {"event_type": event_type, "cam_id": cam_id, "error": str(e)},
+        )

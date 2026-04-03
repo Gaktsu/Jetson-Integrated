@@ -8,7 +8,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 모델 설정
 MODEL_DIR = os.path.join(PROJECT_ROOT, "models")
-DEFAULT_MODEL = "person_detect_v4.pt"
+DEFAULT_MODEL = "best.pt"
 MODEL_PATH = os.path.join(MODEL_DIR, DEFAULT_MODEL)
 
 # 카메라 설정
@@ -53,14 +53,22 @@ EVENT_RECORD_BUFFER_SEC = 15.0
 EVENT_RECORD_POST_SEC = 15.0
 
 # 서버 업로드 설정
+SERVER_URL = "http://3.212.81.201:5000"
 UPLOAD_ENABLED = True
-UPLOAD_URL = "http://3.212.81.201:5000/upload"
+UPLOAD_URL = "{SERVER_URL}/upload"
 UPLOAD_DEVICE_ID = "jetson1"
 UPLOAD_DEVICE_KEY = "a3f9c7e1d2b4a6f8c0e1d3b5a7c9e2f4"
 UPLOAD_REL_DIR = "video"
 UPLOAD_TIMEOUT_SEC = 120
 UPLOAD_MAX_RETRIES = 3
 UPLOAD_RETRY_DELAY_SEC = 2.0
+
+# 이벤트 JSON 로그 전송 설정 (yolo_test-main 기준)
+# 영상과 별개로 경고 레벨 메타데이터를 JSON으로 빠르게 전송
+EVENT_LOG_ENABLED = True                             # False로 바꿼면 전송 비활성화
+EVENT_LOG_URL = "{SERVER_URL}/api/log_event"  # 백엔드 팀에서 공유된 API 주소
+EVENT_LOG_TIMEOUT_SEC = 1.0                          # 영상 끄김 방지용 짧은 타임아웃
+EVENT_LOG_COOLDOWN_SEC = 4.0                         # 동일 카메라 연속 전송 최소 간격 (중복 방지)
 
 # 폴더 관리 설정
 MAX_EVENT_FOLDERS = 100  # event 모드 최대 폴더 개수 (0: 무제한)

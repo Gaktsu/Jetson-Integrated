@@ -17,6 +17,7 @@ from ai.detector import (
 )
 from ai.model import YOLOInference
 from pipeline.shared_state import SharedState
+from pipeline.uploader import upload_event_log
 
 logger = get_logger("pipeline.inference")
 
@@ -204,6 +205,7 @@ def inference_loop(
             intrusion = warning_level != WarningLevel.SAFE
 
             with state.det_lock:
+                prev_warning = state.last_warning_level
                 state.last_detections = detections
                 state.last_detection_ts = timestamp
                 state.last_sensor_data = sensor_data
@@ -211,6 +213,15 @@ def inference_loop(
                 state.last_warning_level = warning_level
                 if intrusion:
                     state.last_intrusion_ts = timestamp
+
+            # 경고 레벨이 SAFE 이상으로 변경된 경우 JSON 이벤트 로그 전송
+            # 쿨다운 내 중복 전송은 upload_event_log 내부에서 차단됨
+            if intrusion and warning_level != prev_warning:
+                upload_event_log(
+                    event_type=warning_level.value,
+                    cam_id=cam_id,
+                    speed_level=state.forklift_speed,
+                )
             
             # detection 히스토리에 저장 전에 smoothing 적용
             smoothed = _smooth_detections(state.smoothed_detections, detections)
