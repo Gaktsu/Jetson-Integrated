@@ -29,9 +29,6 @@ INFER_HALF = True        # FP16 추론 활성화 (Jetson GPU 권장)
 INFER_DEVICE = "cuda:0"  # 추론 디바이스 ("cuda:0": GPU 강제, "cpu": CPU 전용)
 TARGET_CLASS_ID = 0      # person 클래스
 
-# 경고 영역 설정
-WARNING_ZONE_RATIO = 0.8  # 화면 우측 20%
-
 # FPS 계산 설정
 FPS_UPDATE_INTERVAL = 1.0  # 초
 

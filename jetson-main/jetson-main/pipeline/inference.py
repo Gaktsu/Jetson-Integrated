@@ -8,9 +8,8 @@ import threading
 import time
 from typing import Any, Callable, Dict, List, Optional
 
-from config.settings import WARNING_ZONE_RATIO
 from utils.logger import get_logger, EventType
-from ai.detector import Detection, check_intrusion
+from ai.detector import Detection, check_intrusion_polygon, load_roi_polygon
 from ai.model import YOLOInference
 from pipeline.shared_state import SharedState
 
@@ -36,7 +35,7 @@ def start_inference_thread(
     """전체 카메라 공용 추론 스레드 시작"""
     t = threading.Thread(
         target=inference_loop,
-        args=(model, states, get_sensor_snapshot, WARNING_ZONE_RATIO, stop_event),
+        args=(model, states, get_sensor_snapshot, stop_event),
         daemon=True, name="inference_central"
     )
     t.start()
@@ -48,7 +47,6 @@ def inference_loop(
     model: YOLOInference,
     states: List[SharedState],
     sensor_getter: Optional[Callable[[float], Dict[str, Any]]] = None,
-    warning_zone_ratio: float = 0.8,
     stop_event: Optional[threading.Event] = None,
 ) -> None:
     """중앙 추론 스레드"""
@@ -58,10 +56,23 @@ def inference_loop(
         {"num_cameras": len(states)}
     )
 
+    import os
+    from config.settings import PROJECT_ROOT, CAMERA_INDICES
+
     inference_count = 0
     loop_count = 0
     empty_count = 0
-    cached_warning_zone = None  # 첫 프레임 이후 캐시 (해상도 불변)
+
+    # 카메라별 ROI 폴리곤 로드 (roi_config_cam{N}.json)
+    roi_polygons: Dict[int, Any] = {}
+    for cam_idx in CAMERA_INDICES:
+        path = os.path.join(PROJECT_ROOT, "config", f"roi_config_cam{cam_idx}.json")
+        poly = load_roi_polygon(path)
+        roi_polygons[cam_idx] = poly
+        if poly:
+            logger.event_info(EventType.MODULE_INIT, f"ROI 폴리곤 로드 완료", {"cam": cam_idx, "path": path})
+        else:
+            logger.event_info(EventType.MODULE_INIT, f"ROI 폴리곤 없음 — 침입 판별 비활성", {"cam": cam_idx})
 
     # 집계 로그용 누적 변수 (5초마다 평균/최대 출력)
     _AGG_INTERVAL = 5.0
@@ -143,10 +154,9 @@ def inference_loop(
 
             sensor_data = sensor_getter(timestamp) if sensor_getter else None
 
-            if cached_warning_zone is None:
-                h, w = frame.shape[:2]
-                cached_warning_zone = (int(w * warning_zone_ratio), 0, w, h)
-            intrusion = check_intrusion(detections, cached_warning_zone)
+            # 해당 카메라의 ROI 폴리곤으로 foot-point 기반 침입 판별
+            cam_id = CAMERA_INDICES[idx] if idx < len(CAMERA_INDICES) else idx
+            intrusion = check_intrusion_polygon(detections, roi_polygons.get(cam_id))
 
             with state.det_lock:
                 state.last_detections = detections
