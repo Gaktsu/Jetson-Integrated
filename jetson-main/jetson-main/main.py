@@ -218,6 +218,7 @@ def _build_split_frame(
         with state.det_lock:
             detections = list(state.last_detections)
             intrusion  = state.last_intrusion
+            warning_level = state.last_warning_level
 
         if frame is None:
             frame = np.zeros((480, 640, 3), dtype=np.uint8)
@@ -235,6 +236,7 @@ def _build_split_frame(
             draw_ms=draw_ms_list[i],
             roi_polygon=roi_polygons.get(cam_id) if roi_polygons else None,
             forklift_speed=state.forklift_speed,
+            warning_level=warning_level,
         )
         new_draw_ms.append((time.perf_counter() - t0) * 1000)
         panels.append(panel)
@@ -413,6 +415,8 @@ def main():
                 saving = _determine_saving_global(states)  # 모든 카메라 기준
 
                 state = states[cam_idx]
+                with state.det_lock:
+                    warning_level = state.last_warning_level
                 t_draw = time.perf_counter()
                 frame_drawn = draw_detections(
                     frame, detections, fps, saving, CAMERA_INDICES[cam_idx],
@@ -423,6 +427,7 @@ def main():
                     draw_ms=draw_ms,
                     roi_polygon=roi_polygons.get(CAMERA_INDICES[cam_idx]),
                     forklift_speed=state.forklift_speed,
+                    warning_level=warning_level,
                 )
                 draw_ms = (time.perf_counter() - t_draw) * 1000
 

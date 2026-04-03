@@ -9,7 +9,12 @@ import time
 from typing import Any, Callable, Dict, List, Optional
 
 from utils.logger import get_logger, EventType
-from ai.detector import Detection, check_intrusion_polygon, load_roi_polygon
+import numpy as np
+
+from ai.detector import (
+    Detection, WarningLevel,
+    analyze_ttc, check_intrusion_polygon, cleanup_track_history, load_roi_polygon,
+)
 from ai.model import YOLOInference
 from pipeline.shared_state import SharedState
 
@@ -57,7 +62,7 @@ def inference_loop(
     )
 
     import os
-    from config.settings import PROJECT_ROOT, CAMERA_INDICES, ENABLE_TRACKING
+    from config.settings import PROJECT_ROOT, CAMERA_INDICES, ENABLE_TRACKING, DYNAMIC_ROI_PX_PER_SPEED
 
     inference_count = 0
     loop_count = 0
@@ -172,13 +177,38 @@ def inference_loop(
                         {"cam": cam_id, "path": _roi_paths[cam_id]},
                     )
 
-            intrusion = check_intrusion_polygon(detections, roi_polygons.get(cam_id))
+            base_poly = roi_polygons.get(cam_id)  # [[x,y], ...] or None
+
+            # ── 동적 ROI 계산 (yolo_test-main 방식) ──
+            # 지게차 속도에 비례해 ROI 상단(Y값 작은 꼭짓점 2개)을 위로 확장
+            # 속도 0이면 base_poly 그대로, 최고속(5)이면 150px 위로 늘어남
+            dynamic_poly = base_poly
+            speed = state.forklift_speed  # Lock-free 읽기 (int 단순 할당이라 안전)
+            if base_poly is not None and speed > 0:
+                arr = np.array(base_poly, dtype=np.int32)
+                top_idx = np.argsort(arr[:, 1])[:2]          # Y값이 가장 작은 2개 인덱스
+                arr[top_idx, 1] -= speed * DYNAMIC_ROI_PX_PER_SPEED
+                arr[top_idx, 1] = np.maximum(arr[top_idx, 1], 0)  # 화면 밖 방지
+                dynamic_poly = arr.tolist()
+
+            # ── TTC 분석 → 경고 레벨 산출 ──
+            with state.track_history_lock:
+                warning_level = analyze_ttc(detections, dynamic_poly, state.track_history)
+                # 화면에서 사라진 track_id 이력 정리
+                active_ids = [
+                    det["track_id"] for det in detections
+                    if det.get("track_id") is not None
+                ]
+                cleanup_track_history(state.track_history, active_ids)
+
+            intrusion = warning_level != WarningLevel.SAFE
 
             with state.det_lock:
                 state.last_detections = detections
                 state.last_detection_ts = timestamp
                 state.last_sensor_data = sensor_data
                 state.last_intrusion = intrusion
+                state.last_warning_level = warning_level
                 if intrusion:
                     state.last_intrusion_ts = timestamp
             

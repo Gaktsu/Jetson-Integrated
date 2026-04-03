@@ -162,50 +162,15 @@ def draw_detections(
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)
 
     # Saving... (속도 레벨 아래)
+    # ── 카메라 번호 (상태바 바로 아래 우상단) ──
+    cam_text = f"CAM {camera_index}"
+    cam_sz = cv2.getTextSize(cam_text, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)[0]
+    cv2.putText(frame, cam_text, (w - cam_sz[0] - 10, BAR_H + 22),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (200, 200, 200), 1, cv2.LINE_AA)
+
     if saving:
         sav_size = cv2.getTextSize("Saving...", cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)[0]
-        cv2.putText(frame, "Saving...", (w - sav_size[0] - 12, BAR_H + 22),
+        cv2.putText(frame, "Saving...", (w - sav_size[0] - 12, BAR_H + 44),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 255), 2, cv2.LINE_AA)
-
-    # ── 우상단 정보 패널 (상태바 아래) ──
-    info_font  = cv2.FONT_HERSHEY_SIMPLEX
-    info_scale = 0.52
-    info_thick = 1
-    info_color = (0, 255, 255)
-    timing_color = (180, 255, 180)
-    y0 = BAR_H + 22
-
-    info_lines = [
-        (f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", info_color),
-        (f"FPS: {fps:.1f}", info_color),
-        (f"Detected: {len(detections)}", info_color),
-    ]
-    timing_lines = [
-        f"cap:   {capture_ms:5.1f} ms",
-        f"infer: {inference_ms:5.1f} ms",
-        f"post:  {postprocess_ms:5.1f} ms",
-        f"draw:  {draw_ms:5.1f} ms",
-    ]
-
-    for i, (txt, col) in enumerate(info_lines):
-        sz = cv2.getTextSize(txt, info_font, info_scale, info_thick)[0]
-        cv2.putText(frame, txt, (w - sz[0] - 10, y0 + i * 22),
-                    info_font, info_scale, col, info_thick, cv2.LINE_AA)
-
-    t_y0 = y0 + len(info_lines) * 22 + 6
-    for j, txt in enumerate(timing_lines):
-        sz = cv2.getTextSize(txt, info_font, info_scale, info_thick)[0]
-        cv2.putText(frame, txt, (w - sz[0] - 10, t_y0 + j * 20),
-                    info_font, info_scale, timing_color, info_thick, cv2.LINE_AA)
-
-    # ── 좌하단 메뉴 ──
-    menu_lines = [
-        "[Q] Exit",
-        "[W] ROI Setup",
-        "[W/S] Speed +/-",
-    ]
-    for k, txt in enumerate(menu_lines):
-        cv2.putText(frame, txt, (10, h - 12 - (len(menu_lines) - 1 - k) * 18),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.42, (200, 200, 200), 1, cv2.LINE_AA)
 
     return frame

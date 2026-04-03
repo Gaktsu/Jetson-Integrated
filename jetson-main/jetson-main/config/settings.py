@@ -34,6 +34,11 @@ TARGET_CLASS_ID = 0      # person 클래스
 # False: model()  단순 탐지 사용 (추적 불필요 시 CPU·메모리 절약)
 ENABLE_TRACKING = True
 
+# 동적 ROI 설정 (yolo_test-main 기준)
+# 지게차 속도 1 단계당 ROI 상단을 위로 확장할 픽셀 수
+# 속도가 빠를수록 ROI가 앞으로(위로) 늘어나 제동거리를 확보함
+DYNAMIC_ROI_PX_PER_SPEED = 30  # pixels / speed-level
+
 # FPS 계산 설정
 FPS_UPDATE_INTERVAL = 1.0  # 초
 
