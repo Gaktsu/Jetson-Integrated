@@ -234,6 +234,7 @@ def _build_split_frame(
             postprocess_ms=state.postprocess_ms,
             draw_ms=draw_ms_list[i],
             roi_polygon=roi_polygons.get(cam_id) if roi_polygons else None,
+            forklift_speed=state.forklift_speed,
         )
         new_draw_ms.append((time.perf_counter() - t0) * 1000)
         panels.append(panel)
@@ -421,6 +422,7 @@ def main():
                     postprocess_ms=state.postprocess_ms,
                     draw_ms=draw_ms,
                     roi_polygon=roi_polygons.get(CAMERA_INDICES[cam_idx]),
+                    forklift_speed=state.forklift_speed,
                 )
                 draw_ms = (time.perf_counter() - t_draw) * 1000
 

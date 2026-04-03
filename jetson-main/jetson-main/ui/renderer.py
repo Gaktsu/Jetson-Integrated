@@ -6,7 +6,7 @@ import numpy as np
 from typing import Any, List, Optional, Sequence
 from datetime import datetime
 
-from ai.detector import Detection
+from ai.detector import Detection, WarningLevel
 
 def draw_results(
     frame: cv2.Mat,
@@ -82,26 +82,49 @@ def draw_detections(
     postprocess_ms: float = 0.0,
     draw_ms: float = 0.0,
     roi_polygon: Optional[Sequence[Sequence[int]]] = None,
+    warning_level: Optional[WarningLevel] = None,
+    forklift_speed: int = 0,
 ) -> cv2.Mat:
     """
-    탐지 결과를 프레임에 그리기
+    탐지 결과를 프레임에 그리기 (yolo_test-main UI 스타일 적용).
+
+    상단 상태바: 경고 레벨별 색상 + 알람 메시지 + 속도 레벨
+    ROI 오버레이: 경고 레벨 색상으로 테두리
+    바운딩박스: ROI 내부 = 경고색, 외부 = 초록
+    우상단: Time / FPS / Detected / 타이밍 정보
     """
     h, w = frame.shape[:2]
 
-    # ── 폴리곤 ROI 오버레이 ──
-    # roi_setup.py 에서 설정한 영역을 반투명으로 표시
-    # 침입 시 빨강, 평상시 초록
+    # ── 경고 레벨 → 색상·메시지 매핑 (yolo_test-main 기준) ──
+    # warning_level이 None이면 intrusion 플래그로 하위 호환
+    if warning_level is None:
+        warning_level = WarningLevel.BLIND_SPOT if intrusion else WarningLevel.SAFE
+
+    _LEVEL_COLOR = {
+        WarningLevel.SAFE:       (0, 255, 0),    # 초록
+        WarningLevel.BLIND_SPOT: (0, 255, 255),  # 노랑
+        WarningLevel.APPROACH:   (0, 165, 255),  # 주황
+        WarningLevel.URGENT:     (0, 0, 255),    # 빨강
+    }
+    _LEVEL_MSG = {
+        WarningLevel.SAFE:       "SAFE / NORMAL DRIVING",
+        WarningLevel.BLIND_SPOT: "CAUTION: BLIND SPOT OCCUPIED",
+        WarningLevel.APPROACH:   "WARNING: PERSON APPROACHING",
+        WarningLevel.URGENT:     "URGENT: RAPID APPROACH! STOP!",
+    }
+    screen_color = _LEVEL_COLOR[warning_level]
+    alarm_msg    = _LEVEL_MSG[warning_level]
+
+    # ── 폴리곤 ROI 오버레이 (경고 레벨 색상) ──
     poly_arr = None
     if roi_polygon is not None and len(roi_polygon) >= 3:
         poly_arr = np.array(roi_polygon, dtype=np.int32)
-        roi_color = (0, 0, 255) if intrusion else (0, 255, 0)
         overlay = frame.copy()
-        cv2.fillPoly(overlay, [poly_arr], roi_color)
-        cv2.addWeighted(overlay, 0.2, frame, 0.8, 0, frame)
-        cv2.polylines(frame, [poly_arr], True, roi_color, 2)
+        cv2.fillPoly(overlay, [poly_arr], screen_color)
+        cv2.addWeighted(overlay, 0.15, frame, 0.85, 0, frame)
+        cv2.polylines(frame, [poly_arr], True, screen_color, 2)
 
-    # ── 바운딩 박스 그리기 ──
-    # 발끝(foot-point)이 폴리곤 내부인지 개별 판별해 색상 결정
+    # ── 바운딩 박스 그리기 (foot-point 기반 색상) ──
     for det in detections:
         x1, y1, x2, y2 = det["bbox"]
         if det["class_id"] == 0:  # person
@@ -111,94 +134,78 @@ def draw_detections(
                 poly_arr is not None and
                 cv2.pointPolygonTest(poly_arr, (float(foot_x), float(foot_y)), False) >= 0
             )
-            color = (0, 0, 255) if is_inside else (0, 255, 0)
+            color     = screen_color if is_inside else (0, 255, 0)
             thickness = 3 if is_inside else 2
-
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, thickness)
+            label = f"{det['class_name']} {det['confidence']:.2f}"
+            cv2.putText(frame, label, (x1, max(0, y1 - 5)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
+            # track_id 표시 (있을 때만)
+            tid = det.get("track_id")
+            if tid is not None:
+                cv2.putText(frame, f"ID:{tid}", (foot_x + 8, foot_y - 8),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.circle(frame, (foot_x, foot_y), 5, color, -1)
 
-            text = f"{det['class_name']} {det['confidence']:.2f}"
-            cv2.putText(frame, text, (x1, max(0, y1 - 5)),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
-    
-    # Warning 문구
-    if intrusion and not saving:
-        warning_text = "WARNING!"
-        font_scale = 2.0
-        thickness = 4
-        text_size = cv2.getTextSize(warning_text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)[0]
-        text_x = (w - text_size[0]) // 2
-        text_y = (h + text_size[1]) // 2
-        
-        cv2.rectangle(frame, (text_x - 20, text_y - text_size[1] - 20),
-                     (text_x + text_size[0] + 20, text_y + 10), (0, 0, 0), -1)
-        cv2.putText(frame, warning_text, (text_x, text_y),
-                   cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), thickness, cv2.LINE_AA)
-    
-    # 우상단 정보
-    font_scale = 0.6
-    thickness = 2
-    y_offset = 30
-    
+    # ── 상단 상태바 (yolo_test-main 스타일) ──
+    BAR_H = 55
+    cv2.rectangle(frame, (0, 0), (w, BAR_H), (0, 0, 0), -1)
+
+    # 알람 메시지 (좌측)
+    cv2.putText(frame, alarm_msg, (12, 36),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.75, screen_color, 2, cv2.LINE_AA)
+
+    # 속도 레벨 (우측)
+    speed_text = f"Speed: {forklift_speed}/5"
+    spd_size = cv2.getTextSize(speed_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
+    cv2.putText(frame, speed_text, (w - spd_size[0] - 12, 36),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)
+
+    # Saving... (속도 레벨 아래)
     if saving:
-        text = "Saving..."
-        text_size = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)[0]
-        x_pos = w - text_size[0] - 10
-        cv2.putText(frame, text, (x_pos, y_offset),
-                   cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), thickness, cv2.LINE_AA)
-    else:
-        color = (0, 255, 255)
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
-        # 시간
-        text_time = f"Time: {current_time}"
-        text_size = cv2.getTextSize(text_time, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)[0]
-        x_pos = w - text_size[0] - 10
-        cv2.putText(frame, text_time, (x_pos, y_offset),
-                   cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness, cv2.LINE_AA)
-        
-        # FPS
-        text_fps = f"FPS: {fps:.1f}"
-        text_size = cv2.getTextSize(text_fps, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)[0]
-        x_pos = w - text_size[0] - 10
-        cv2.putText(frame, text_fps, (x_pos, y_offset + 30),
-                   cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness, cv2.LINE_AA)
-        
-        # 탐지 수
-        text_count = f"Detected: {len(detections)}"
-        text_size = cv2.getTextSize(text_count, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)[0]
-        x_pos = w - text_size[0] - 10
-        cv2.putText(frame, text_count, (x_pos, y_offset + 60),
-                   cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness, cv2.LINE_AA)
-        
-        # 카메라 번호
-        text_camera = f"Camera: {camera_index}"
-        text_size = cv2.getTextSize(text_camera, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)[0]
-        x_pos = w - text_size[0] - 10
-        cv2.putText(frame, text_camera, (x_pos, y_offset + 90),
-                   cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness, cv2.LINE_AA)
+        sav_size = cv2.getTextSize("Saving...", cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)[0]
+        cv2.putText(frame, "Saving...", (w - sav_size[0] - 12, BAR_H + 22),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 255), 2, cv2.LINE_AA)
 
-        # 타이밍
-        timing_color = (180, 255, 180)
-        for i, t_text in enumerate([
-            f"cap:     {capture_ms:5.1f} ms",
-            f"infer:   {inference_ms:5.1f} ms",
-            f"post:    {postprocess_ms:5.1f} ms",
-            f"draw:    {draw_ms:5.1f} ms",
-        ]):
-            text_size = cv2.getTextSize(t_text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)[0]
-            x_pos = w - text_size[0] - 10
-            cv2.putText(frame, t_text, (x_pos, y_offset + 120 + i * 30),
-                       cv2.FONT_HERSHEY_SIMPLEX, font_scale, timing_color, thickness, cv2.LINE_AA)
-    
-    # 좌하단 메뉴 (항상 표시)
-    menu_font_scale = 0.5
-    menu_thickness = 1
-    menu_color = (255, 255, 255)
-    menu_y_start = h - 50
-    
-    cv2.putText(frame, "[Q] Exit", (10, menu_y_start),
-               cv2.FONT_HERSHEY_SIMPLEX, menu_font_scale, menu_color, menu_thickness, cv2.LINE_AA)
-    cv2.putText(frame, "[C] Switch Camera", (10, menu_y_start + 20),
-               cv2.FONT_HERSHEY_SIMPLEX, menu_font_scale, menu_color, menu_thickness, cv2.LINE_AA)
-    
+    # ── 우상단 정보 패널 (상태바 아래) ──
+    info_font  = cv2.FONT_HERSHEY_SIMPLEX
+    info_scale = 0.52
+    info_thick = 1
+    info_color = (0, 255, 255)
+    timing_color = (180, 255, 180)
+    y0 = BAR_H + 22
+
+    info_lines = [
+        (f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", info_color),
+        (f"FPS: {fps:.1f}", info_color),
+        (f"Detected: {len(detections)}", info_color),
+    ]
+    timing_lines = [
+        f"cap:   {capture_ms:5.1f} ms",
+        f"infer: {inference_ms:5.1f} ms",
+        f"post:  {postprocess_ms:5.1f} ms",
+        f"draw:  {draw_ms:5.1f} ms",
+    ]
+
+    for i, (txt, col) in enumerate(info_lines):
+        sz = cv2.getTextSize(txt, info_font, info_scale, info_thick)[0]
+        cv2.putText(frame, txt, (w - sz[0] - 10, y0 + i * 22),
+                    info_font, info_scale, col, info_thick, cv2.LINE_AA)
+
+    t_y0 = y0 + len(info_lines) * 22 + 6
+    for j, txt in enumerate(timing_lines):
+        sz = cv2.getTextSize(txt, info_font, info_scale, info_thick)[0]
+        cv2.putText(frame, txt, (w - sz[0] - 10, t_y0 + j * 20),
+                    info_font, info_scale, timing_color, info_thick, cv2.LINE_AA)
+
+    # ── 좌하단 메뉴 ──
+    menu_lines = [
+        "[Q] Exit",
+        "[W] ROI Setup",
+        "[W/S] Speed +/-",
+    ]
+    for k, txt in enumerate(menu_lines):
+        cv2.putText(frame, txt, (10, h - 12 - (len(menu_lines) - 1 - k) * 18),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.42, (200, 200, 200), 1, cv2.LINE_AA)
+
     return frame

@@ -1,0 +1,41 @@
+==============================
+[미해결 문제] NoMachine 재접속 실패
+==============================
+
+증상:
+  - NoMachine이 끊겼을 때 "호스트로 갈 루트가 없다(No route to host)" 오류 발생
+  - Jetson에서 google.com ping은 정상 → Jetson 자체는 살아있음
+  - 원인: DHCP 환경에서 Jetson 재연결 시 IP가 바뀌는 것으로 추정
+
+해결 방법: Jetson IP 고정 (Static IP 설정)
+-------------------------------
+
+1. Jetson 터미널에서 현재 IP 및 인터페이스 확인
+   $ hostname -I
+   $ ip route
+
+2. netplan 설정 파일 편집 (인터페이스명은 eth0 또는 wlan0 확인 후 수정)
+   $ sudo nano /etc/netplan/01-netcfg.yaml
+
+   아래 내용으로 수정:
+   ---
+   network:
+     ethernets:
+       eth0:               # ← 실제 인터페이스명으로 교체
+         dhcp4: no
+         addresses: [192.168.x.xxx/24]   # ← 원하는 고정 IP로 교체
+         gateway4: 192.168.x.1           # ← 공유기 IP로 교체
+         nameservers:
+           addresses: [8.8.8.8, 8.8.4.4]
+     version: 2
+   ---
+
+3. 설정 적용
+   $ sudo netplan apply
+
+4. NoMachine에서 해당 고정 IP로 접속 주소 저장
+
+참고:
+  - 공유기 관리 페이지에서 Jetson MAC 주소 기반 IP 예약(DHCP 고정) 설정도 가능
+  - Jetson MAC 주소 확인: $ ip link show eth0
+==============================
