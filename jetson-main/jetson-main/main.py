@@ -351,7 +351,7 @@ def main():
     gps, imu = GPS(), IMU()
     threads: List[threading.Thread] = (
         start_capture_threads(cameras, states, fps_map, save_queue)
-        + [start_inference_thread(model, states, get_sensor_snapshot, inference_stop_event)]
+        + start_inference_thread(model, states, get_sensor_snapshot, inference_stop_event)
         + start_sensor_threads(gps, imu, sensor_stop_event, gps_buffer, imu_buffer)
         + [start_save_thread(save_queue, save_stop_event, fps_map, get_sensor_snapshot, state_map)]
     )
