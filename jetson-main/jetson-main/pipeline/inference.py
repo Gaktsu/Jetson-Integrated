@@ -57,7 +57,7 @@ def inference_loop(
     )
 
     import os
-    from config.settings import PROJECT_ROOT, CAMERA_INDICES
+    from config.settings import PROJECT_ROOT, CAMERA_INDICES, ENABLE_TRACKING
 
     inference_count = 0
     loop_count = 0
@@ -116,7 +116,7 @@ def inference_loop(
 
             # ── GPU 추론 시간 단독 측정 ──
             t0 = time.perf_counter()
-            results = model.run_inference(frame)
+            results = model.run_inference(frame, tracking=ENABLE_TRACKING)
             state.inference_ms = (time.perf_counter() - t0) * 1000
 
             # ── CPU 후처리 시간 단독 측정 ──

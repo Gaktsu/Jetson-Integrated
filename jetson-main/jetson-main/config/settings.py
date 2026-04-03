@@ -29,6 +29,11 @@ INFER_HALF = True        # FP16 추론 활성화 (Jetson GPU 권장)
 INFER_DEVICE = "cuda:0"  # 추론 디바이스 ("cuda:0": GPU 강제, "cpu": CPU 전용)
 TARGET_CLASS_ID = 0      # person 클래스
 
+# 객체 추적 설정
+# True : model.track(persist=True) 사용 — TTC/동적ROI 기능에 필요
+# False: model()  단순 탐지 사용 (추적 불필요 시 CPU·메모리 절약)
+ENABLE_TRACKING = True
+
 # FPS 계산 설정
 FPS_UPDATE_INTERVAL = 1.0  # 초
 

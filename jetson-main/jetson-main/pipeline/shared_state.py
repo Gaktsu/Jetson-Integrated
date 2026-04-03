@@ -6,6 +6,7 @@ from __future__ import annotations
 import cv2
 import queue
 import threading
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
 from utils.logger import get_logger
@@ -44,6 +45,13 @@ class SharedState:
         self.smoothed_detections_lock = threading.Lock()
         
         self.stop_event = threading.Event()
+
+        # ── TTC / 동적 ROI 상태 ──
+        # track_history: {track_id: [box_area, ...]} — 최대 15프레임 면적 이력
+        # forklift_speed: 0(정지)~5(최고속) — 동적 ROI 팽창량 및 TTC 임계값 조정에 사용
+        self.track_history: Dict[int, List[float]] = defaultdict(list)
+        self.track_history_lock = threading.Lock()
+        self.forklift_speed: int = 0  # inference 스레드에서 기록, main 루프에서 읽기
 
         # ── 성능 측정 (ms, Lock-free 단순 할당) ──
         # 각 스레드에서 작성 / 메인 루프에서 읽기용
