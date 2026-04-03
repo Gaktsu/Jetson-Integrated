@@ -113,17 +113,35 @@ def _open_roi_setup(states: List[SharedState]) -> None:
     카메라 충돌 방지를 위해 SharedState의 최신 프레임을 frame_getter로 전달한다.
     """
     logger.event_info(EventType.USER_INPUT, "ROI 캘리브레이션 도구 열기", {"key": "w"})
+
+    # 창을 닫기 전에 현재 창 모드와 크기를 읽어 roi_setup에 그대로 전달
+    is_fullscreen = (
+        cv2.getWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN) == cv2.WINDOW_FULLSCREEN
+    )
+    rect = cv2.getWindowImageRect(WINDOW_NAME)  # (x, y, w, h)
+    window_config = {
+        "fullscreen": is_fullscreen,
+        "width": rect[2] if rect[2] > 0 else 1280,
+        "height": rect[3] if rect[3] > 0 else 720,
+    }
+
     cv2.destroyWindow(WINDOW_NAME)
     cv2.waitKey(1)
 
-    def frame_getter():
-        state = states[0]
-        with state.frame_lock:
-            if state.latest_frame is not None:
-                return state.latest_frame.copy()
-        return None
+    def _make_getter(state):
+        def getter():
+            with state.frame_lock:
+                if state.latest_frame is not None:
+                    return state.latest_frame.copy()
+            return None
+        return getter
 
-    _roi_setup_mod.main(frame_getter=frame_getter)
+    frame_getters = {
+        CAMERA_INDICES[i]: _make_getter(states[i])
+        for i in range(len(states))
+    }
+
+    _roi_setup_mod.main(frame_getters=frame_getters, window_config=window_config)
     # 캘리브레이션 종료 후 메인 전체화면 창 복원
     cv2.namedWindow(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN)
     cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
