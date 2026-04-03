@@ -21,10 +21,6 @@ from pipeline.uploader import upload_event_log
 
 logger = get_logger("pipeline.inference")
 
-# 카메라 스레드가 동시에 GPU를 점유하지 않도록 하는 전역 락
-# YOLO 추론은 단일 GPU에서 직렬화 필요
-_gpu_lock = threading.Lock()
-
 
 def _agg_avg(lst: list) -> float:
     """리스트 평균. 빈 경우 0.0 반환."""
@@ -36,8 +32,8 @@ def _agg_max(lst: list) -> float:
     return max(lst) if lst else 0.0
 
 
-def start_inference_threads(
-    model: YOLOInference,
+def start_inference_thread(
+    models: List[YOLOInference],
     states: List[SharedState],
     get_sensor_snapshot,
     stop_event: threading.Event,
@@ -46,7 +42,7 @@ def start_inference_threads(
     import os
     from config.settings import CAMERA_INDICES
     threads = []
-    for idx, state in enumerate(states):
+    for idx, (model, state) in enumerate(zip(models, states)):
         cam_id = CAMERA_INDICES[idx] if idx < len(CAMERA_INDICES) else idx
         t = threading.Thread(
             target=_single_cam_inference_loop,
@@ -58,17 +54,6 @@ def start_inference_threads(
         logger.debug(f"추론 스레드 시작 (cam={cam_id})")
         threads.append(t)
     return threads
-
-
-# 이전 단일 스레드 API — main.py 호환성 유지
-def start_inference_thread(
-    model: YOLOInference,
-    states: List[SharedState],
-    get_sensor_snapshot,
-    stop_event: threading.Event,
-) -> List[threading.Thread]:
-    """카메라별 독립 추론 스레드 시작 (start_inference_threads 위임). 리스트 반환."""
-    return start_inference_threads(model, states, get_sensor_snapshot, stop_event)
 
 
 def _single_cam_inference_loop(
@@ -116,11 +101,10 @@ def _single_cam_inference_loop(
         if stride_counter != 0:
             continue
 
-        # ── GPU 추론 (락으로 직렬화) ──
-        with _gpu_lock:
-            t0 = time.perf_counter()
-            results = model.run_inference(frame, tracking=ENABLE_TRACKING)
-            state.inference_ms = (time.perf_counter() - t0) * 1000
+        # ── GPU 추론 (각 카메라 전용 모델 — 락 불필요) ──
+        t0 = time.perf_counter()
+        results = model.run_inference(frame, tracking=ENABLE_TRACKING)
+        state.inference_ms = (time.perf_counter() - t0) * 1000
 
         # ── CPU 후처리 ──
         t1 = time.perf_counter()
@@ -174,8 +158,8 @@ def _single_cam_inference_loop(
         # ── TTC 분석 → 경고 레벨 산출 ──
         with state.track_history_lock:
             warning_level = analyze_ttc(detections, dynamic_poly, state.track_history)
-            active_ids = [
-                det["track_id"] for det in detections
+            active_ids: List[int] = [
+                det["track_id"] for det in detections  # type: ignore[typeddict-item]
                 if det.get("track_id") is not None
             ]
             cleanup_track_history(state.track_history, active_ids)
