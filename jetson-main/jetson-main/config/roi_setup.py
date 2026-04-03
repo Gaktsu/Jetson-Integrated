@@ -19,9 +19,16 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 
 import cv2
 import numpy as np
+
+# 어느 디렉터리에서 실행하든 프로젝트 루트를 sys.path에 추가
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.dirname(_HERE)
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
 from config.settings import CAMERA_INDEX, PROJECT_ROOT
 
