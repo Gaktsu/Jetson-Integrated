@@ -30,6 +30,7 @@ from ui.renderer import draw_detections
 from utils.time_utils import FPSCounter
 from utils.sensor_sync import SensorBuffer
 from utils.logger import get_logger, EventType
+from config import roi_setup as _roi_setup_mod
 # 중앙 Orchestrator 로거
 logger = get_logger("main_orchestrator")
 
@@ -104,6 +105,20 @@ def _determine_saving_global(states: List[SharedState]) -> bool:
         if last_ts > 0 and (now - last_ts) <= EVENT_RECORD_POST_SEC:
             return True
     return False
+
+
+def _open_roi_setup() -> None:
+    """ROI 캘리브레이션 도구를 메인 스레드에서 실행.
+    백그라운드 스레드(캡처/추론/저장/센서)는 계속 실행된다.
+    """
+    logger.event_info(EventType.USER_INPUT, "ROI 캘리브레이션 도구 열기", {"key": "w"})
+    cv2.destroyWindow(WINDOW_NAME)
+    cv2.waitKey(1)
+    _roi_setup_mod.main()
+    # 캘리브레이션 종료 후 메인 전체화면 창 복원
+    cv2.namedWindow(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN)
+    cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    logger.event_info(EventType.STATE_CHANGE, "ROI 캘리브레이션 완료, 메인 창 복원")
 
 
 def _handle_keypress(key: int, cam_idx: int, num_cameras: int) -> Tuple[int, bool]:
@@ -338,6 +353,8 @@ def main():
                     cv2.destroyAllWindows()
                     cv2.waitKey(1)
                     break
+                elif key == ord('w'):
+                    _open_roi_setup()
 
             else:
                 # ── 전환 모드: 한 카메라씩, [C] 키로 전환 ──
@@ -372,6 +389,9 @@ def main():
                     break
                 if key == ord('c'):
                     last_frame_seq = -1  # 카메라 전환 시 이전 시퀀스 초기화
+                elif key == ord('w'):
+                    _open_roi_setup()
+                    last_frame_seq = -1  # 창 복원 후 이전 시퀀스 초기화
 
     except KeyboardInterrupt:
         logger.event_warning(EventType.USER_INPUT, "키보드 인터럽트로 종료")
