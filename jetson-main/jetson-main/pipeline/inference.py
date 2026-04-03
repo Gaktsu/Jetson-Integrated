@@ -21,6 +21,11 @@ from pipeline.uploader import upload_event_log
 
 logger = get_logger("pipeline.inference")
 
+# 두 카메라 추론 스레드가 동시에 GPU를 사용할 때 발생하는
+# CUDA 메모리 경합 / ByteTrack 내부 상태 충돌을 방지하기 위한 Lock.
+# 한 번에 한 스레드만 run_inference()를 실행한다.
+_gpu_lock = threading.Lock()
+
 
 def _agg_avg(lst: list) -> float:
     """리스트 평균. 빈 경우 0.0 반환."""
@@ -101,9 +106,10 @@ def _single_cam_inference_loop(
         if stride_counter != 0:
             continue
 
-        # ── GPU 추론 (각 카메라 전용 모델 — 락 불필요) ──
+        # ── GPU 추론 (Lock으로 직렬화 — CUDA 경합 방지) ──
         t0 = time.perf_counter()
-        results = model.run_inference(frame, tracking=ENABLE_TRACKING)
+        with _gpu_lock:
+            results = model.run_inference(frame, tracking=ENABLE_TRACKING)
         state.inference_ms = (time.perf_counter() - t0) * 1000
 
         # ── CPU 후처리 ──
