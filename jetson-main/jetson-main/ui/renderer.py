@@ -124,7 +124,7 @@ def draw_detections(
         cv2.addWeighted(overlay, 0.15, frame, 0.85, 0, frame)
         cv2.polylines(frame, [poly_arr], True, screen_color, 2)
 
-    # ── 바운딩 박스 그리기 (foot-point 기반 색상) ──
+    # ── 발끝 점 + ID 그리기 (yolo_test-main 스타일 — 바운딩박스 없음) ──
     for det in detections:
         x1, y1, x2, y2 = det["bbox"]
         if det["class_id"] == 0:  # person
@@ -134,18 +134,12 @@ def draw_detections(
                 poly_arr is not None and
                 cv2.pointPolygonTest(poly_arr, (float(foot_x), float(foot_y)), False) >= 0
             )
-            color     = screen_color if is_inside else (0, 255, 0)
-            thickness = 3 if is_inside else 2
-            cv2.rectangle(frame, (x1, y1), (x2, y2), color, thickness)
-            label = f"{det['class_name']} {det['confidence']:.2f}"
-            cv2.putText(frame, label, (x1, max(0, y1 - 5)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
-            # track_id 표시 (있을 때만)
+            dot_color = screen_color if is_inside else (255, 0, 0)  # ROI 내부=경고색, 외부=파랑
+            cv2.circle(frame, (foot_x, foot_y), 7, dot_color, -1)
             tid = det.get("track_id")
             if tid is not None:
-                cv2.putText(frame, f"ID:{tid}", (foot_x + 8, foot_y - 8),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1, cv2.LINE_AA)
-            cv2.circle(frame, (foot_x, foot_y), 5, color, -1)
+                cv2.putText(frame, f"ID:{tid}", (foot_x + 10, foot_y - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
 
     # ── 상단 상태바 (yolo_test-main 스타일) ──
     BAR_H = 55

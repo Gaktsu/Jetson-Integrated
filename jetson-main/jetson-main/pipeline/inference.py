@@ -63,11 +63,14 @@ def inference_loop(
     )
 
     import os
-    from config.settings import PROJECT_ROOT, CAMERA_INDICES, ENABLE_TRACKING, DYNAMIC_ROI_PX_PER_SPEED
+    from config.settings import PROJECT_ROOT, CAMERA_INDICES, ENABLE_TRACKING, DYNAMIC_ROI_PX_PER_SPEED, INFER_STRIDE
 
     inference_count = 0
     loop_count = 0
     empty_count = 0
+
+    # 카메라별 프레임 카운터 (INFER_STRIDE 적용용)
+    _stride_counters: Dict[int, int] = {i: 0 for i in range(len(states))}
 
     # 카메라별 ROI 폴리곤 로드 (roi_config_cam{N}.json)
     # None인 카메라는 매 프레임마다 재시도 — 나중에 roi_setup으로 파일이 생겨도 자동 반영
@@ -121,6 +124,12 @@ def inference_loop(
                 continue
 
             did_work = True
+
+            # ── INFER_STRIDE: N프레임마다 1회만 추론 (나머지 프레임은 큐 소비 후 스킵) ──
+            _stride_counters[idx] = (_stride_counters[idx] + 1) % INFER_STRIDE
+            if _stride_counters[idx] != 0:
+                continue
+
             logger.debug("추론 시작", {"camera_index": idx, "frame_seq": seq, "ts": timestamp})
 
             # ── GPU 추론 시간 단독 측정 ──
