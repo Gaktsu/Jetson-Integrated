@@ -39,14 +39,13 @@ def _build_gst_h264_pipeline(w: int, h: int, fps: float, file_path: str) -> str:
     """
     fps_int = max(1, round(fps))
     gop = fps_int * 2  # 2초 단위 키프레임 간격 (key-int-max)
-    # OpenCV GStreamer 파서는 location= 뒤 따옴표를 지원하지 않으므로 제거
-    # 경로에 공백이 없도록 _build_event_filename 에서 이미 보장됨
-    safe_path = file_path.replace("\\", "/")  # Windows 경로 구분자 통일
+    safe_path = file_path.replace("\\", "/")
+    # Python 쪽에서 BGR→I420 변환 후 전달 — rawvideoparse BGR 미지원 보전성 확보
+    frame_size = w * h * 3 // 2  # I420 한 프레임 바이트 크기
     return (
-        f"appsrc ! "
-        f"video/x-raw,format=BGR,width={w},height={h},framerate={fps_int}/1 ! "
-        f"videoconvert ! "
-        f"video/x-raw,format=I420 ! "  # x264enc 는 I420 포맷 입력 필요
+        f"fdsrc fd=0 ! "
+        f"rawvideoparse width={w} height={h} format=I420 "
+        f"framerate-n={fps_int} framerate-d=1 framesize={frame_size} ! "
         f"x264enc speed-preset={_GST_H264_PRESET} tune=zerolatency "
         f"bitrate={_GST_H264_BITRATE} key-int-max={gop} ! "
         f"h264parse ! "
@@ -56,67 +55,67 @@ def _build_gst_h264_pipeline(w: int, h: int, fps: float, file_path: str) -> str:
 
 
 def _check_gstreamer_available() -> bool:
-    """gst-launch-1.0 도구와 x264enc 플러그인이 설치되어 있는지 확인한다."""
-    gst = shutil.which("gst-launch-1.0")
-    if gst is None:
+    """ffmpeg 바이너리와 libx264 인코더가 사용 가능한지 확인한다."""
+    if shutil.which("ffmpeg") is None:
         logger.event_error(
             EventType.ERROR_OCCURRED,
-            "gst-launch-1.0 바이너리를 찾을 수 없습니다.",
-            {"hint": "sudo apt install gstreamer1.0-tools"}
+            "ffmpeg 바이너리를 찾을 수 없습니다.",
+            {"hint": "sudo apt install ffmpeg"}
         )
         return False
-    # x264enc 플러그인 존재 여부 확인
     result = subprocess.run(
-        ["gst-inspect-1.0", "x264enc"],
+        ["ffmpeg", "-encoders"],
         capture_output=True, text=True
     )
-    if result.returncode != 0:
+    if "libx264" not in result.stdout:
         logger.event_error(
             EventType.ERROR_OCCURRED,
-            "x264enc 플러그인을 찾을 수 없습니다.",
-            {"hint": "sudo apt install gstreamer1.0-plugins-ugly"}
+            "ffmpeg에서 libx264 인코더를 찾을 수 없습니다.",
+            {"hint": "sudo apt install ffmpeg libx264-dev"}
         )
         return False
     return True
 
 
 class GstH264Writer:
-    """cv2.VideoWriter 호환 인터페이스로 GStreamer H.264 저장을 수행하는 클래스.
+    """cv2.VideoWriter 호환 인터페이스로 ffmpeg libx264를 사용해 H.264를 실시간 저장하는 클래스.
 
-    OpenCV GStreamer 지원 없이도 동작합니다.
-    gst-launch-1.0 서브프로세스에 raw BGR 프레임을 stdin으로 전달합니다.
+    GStreamer 플러그인 호환성 문제를 우회하기 위해 ffmpeg stdin pipe 방식을 사용합니다.
+    ffmpeg -f rawvideo -pix_fmt bgr24 -i pipe:0 으로 BGR 프레임을 실시간 인코딩합니다.
     """
 
     def __init__(self, w: int, h: int, fps_int: int, file_path: str) -> None:
         self._proc: Optional[subprocess.Popen] = None
-        safe_path = file_path.replace("\\", "/")
-        gop = fps_int * 2
-        pipeline = (
-            f"fdsrc fd=0 ! "
-            f"video/x-raw,format=BGR,width={w},height={h},framerate={fps_int}/1 ! "
-            f"videoconvert ! "
-            f"video/x-raw,format=I420 ! "
-            f"x264enc speed-preset={_GST_H264_PRESET} tune=zerolatency "
-            f"bitrate={_GST_H264_BITRATE} key-int-max={gop} ! "
-            f"h264parse ! "
-            f"mp4mux ! "
-            f"filesink location={safe_path} sync=false"
-        )
+        cmd = [
+            "ffmpeg", "-y",
+            "-f", "rawvideo",
+            "-vcodec", "rawvideo",
+            "-pix_fmt", "bgr24",
+            "-s", f"{w}x{h}",
+            "-r", str(fps_int),
+            "-i", "pipe:0",
+            "-c:v", "libx264",
+            "-preset", _GST_H264_PRESET,
+            "-tune", "zerolatency",
+            "-b:v", f"{_GST_H264_BITRATE}k",
+            "-movflags", "+faststart",
+            file_path,
+        ]
         logger.event_info(
             EventType.MODULE_START,
-            "GstH264Writer 파이프라인 시작",
-            {"pipeline": pipeline, "file": safe_path}
+            "H264Writer(ffmpeg stdin pipe) 시작",
+            {"cmd": " ".join(cmd)}
         )
         try:
             self._proc = subprocess.Popen(
-                ["gst-launch-1.0", "-e"] + pipeline.split(),
+                cmd,
                 stdin=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
         except Exception as e:
             logger.event_error(
                 EventType.ERROR_OCCURRED,
-                "GstH264Writer 프로세스 시작 실패",
+                "H264Writer 프로세스 시작 실패",
                 {"error": str(e)}
             )
             self._proc = None
@@ -128,6 +127,7 @@ class GstH264Writer:
         if self._proc is None or self._proc.stdin is None:
             return
         try:
+            # ffmpeg -pix_fmt bgr24 으로 직접 BGR 수신 — 변환 불필요
             self._proc.stdin.write(frame.tobytes())
         except (BrokenPipeError, OSError):
             pass
@@ -398,18 +398,11 @@ def _create_writer(
         )
 
         if codec == "X264":
-            # GStreamer 사용 가능 여부 사전 확인
+            # ffmpeg libx264 사용 가능 여부 사전 확인
             if not _check_gstreamer_available():
                 return None
-            gst_pipeline = _build_gst_h264_pipeline(w, h, fps_int, file_path)
-            logger.event_info(
-                EventType.MODULE_START,
-                "GStreamer H.264 파이프라인 생성",
-                {"pipeline": gst_pipeline}
-            )
             writer = GstH264Writer(w, h, fps_int, file_path)
         else:
-            gst_pipeline = None
             fourcc = cv2.VideoWriter_fourcc(*codec)
             writer = cv2.VideoWriter(file_path, fourcc, fps, (w, h))
 
@@ -422,13 +415,11 @@ def _create_writer(
         if not writer.isOpened():
             logger.event_error(
                 EventType.ERROR_OCCURRED,
-                "영상 저장기 생성 실패 — GStreamer 파이프라인 또는 플러그인 문제일 수 있습니다. "
-                "터미널에서 확인: gst-inspect-1.0 x264enc",
+                "영상 저장기 생성 실패 — ffmpeg 프로세스를 시작할 수 없습니다.",
                 {
                     "camera": cam_id,
                     "path": file_path,
-                    "pipeline": gst_pipeline if codec == "X264" else None,
-                    "hint": "sudo apt install gstreamer1.0-plugins-ugly 로 x264enc 설치 필요"
+                    "hint": "ffmpeg -encoders | grep libx264 로 인코더 지원 여부 확인"
                 }
             )
             return None
