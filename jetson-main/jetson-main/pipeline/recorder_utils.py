@@ -17,6 +17,40 @@ from utils.time_utils import epoch_to_tag
 
 logger = get_logger("pipeline.recorder_utils")
 
+# ──────────────────────────────────────────────────────────────
+# GStreamer H.264 직접 저장 설정
+#   speed-preset  : ultrafast / veryfast  (CPU 부담 조절)
+#   bitrate       : kbps 단위, 해상도·프레임에 따라 아래 값 조정
+#     예) 1280×720 @27fps → 1500~2000, 1920×1080 @27fps → 3000~4000
+# ──────────────────────────────────────────────────────────────
+_GST_H264_BITRATE: int = 2000      # kbps
+_GST_H264_PRESET: str = "ultrafast"  # ultrafast / veryfast
+
+
+def _build_gst_h264_pipeline(w: int, h: int, fps: float, file_path: str) -> str:
+    r"""GStreamer appsrc → x264enc(소프트웨어) → mp4mux 파이프라인 문자열 반환.
+
+    필요 GStreamer 플러그인:
+        sudo apt install \
+            gstreamer1.0-plugins-ugly \   # x264enc
+            gstreamer1.0-plugins-good \   # mp4mux, videoconvert
+            gstreamer1.0-plugins-base \   # appsrc, videoconvert
+            gstreamer1.0-tools             # gst-launch-1.0 (디버깅용)
+    """
+    fps_int = max(1, round(fps))
+    gop = fps_int * 2  # 2초 단위 키프레임 간격 (key-int-max)
+    return (
+        f"appsrc ! "
+        f"video/x-raw,format=BGR,width={w},height={h},framerate={fps_int}/1 ! "
+        f"videoconvert ! "
+        f"x264enc speed-preset={_GST_H264_PRESET} tune=zerolatency "
+        f"bitrate={_GST_H264_BITRATE} key-int-max={gop} ! "
+        f"h264parse ! "
+        f"mp4mux ! "
+        f"filesink location={file_path}"
+    )
+
+
 def _transcode_to_h264(file_path: str) -> Optional[str]:
     """
     저장된 MJPG .avi 파일을 H.264 .mp4로 변환 (ffmpeg 사용).
@@ -129,14 +163,14 @@ def _transcode_to_h264(file_path: str) -> Optional[str]:
         return None
 
 
-def _transcode_and_upload(file_path: str) -> None:
-    """H.264 변환 후 즉시 업로드를 수행한다."""
-    out_path = _transcode_to_h264(file_path)
-    if out_path is None:
-        return
+def _upload_video(file_path: str) -> None:
+    """GStreamer X264로 저장된 .mp4 파일을 업로드한다.
+
+    파일은 이미 H.264 MP4로 저장되어 있으므로 변환 없이 바로 업로드한다.
+    """
     if not UPLOAD_ENABLED:
         return
-    upload_video_file(out_path)
+    upload_video_file(file_path)
 
 
 def _create_event_folder(
@@ -238,23 +272,36 @@ def _create_writer(
     try:
         h, w = frame.shape[:2]
         fps = fps_map.get(cam_id, 30.0) or 30.0
-        fourcc = cv2.VideoWriter_fourcc(*codec)
-        
+
         logger.event_info(
             EventType.MODULE_START,
             "_create_writer 시작",
             {"cam_id": cam_id, "fps": fps, "codec": codec, "frame_size": (w, h), "event_folder": event_folder}
         )
-        
+
         file_path = _build_event_filename(save_dir, cam_id, timestamp, sensor_data, event_folder)
-        
+
+        # X264 코덱 요청 시 확장자를 .mp4 로 교체 (GStreamer 직접 저장)
+        if codec == "X264":
+            file_path = os.path.splitext(file_path)[0] + ".mp4"
+
         logger.event_info(
             EventType.MODULE_START,
             "파일 경로 생성 완료",
             {"file_path": file_path}
         )
-        
-        writer = cv2.VideoWriter(file_path, fourcc, fps, (w, h))
+
+        if codec == "X264":
+            gst_pipeline = _build_gst_h264_pipeline(w, h, fps, file_path)
+            logger.event_info(
+                EventType.MODULE_START,
+                "GStreamer H.264 파이프라인 생성",
+                {"pipeline": gst_pipeline}
+            )
+            writer = cv2.VideoWriter(gst_pipeline, cv2.CAP_GSTREAMER, 0, fps, (w, h))
+        else:
+            fourcc = cv2.VideoWriter_fourcc(*codec)
+            writer = cv2.VideoWriter(file_path, fourcc, fps, (w, h))
         
         logger.event_info(
             EventType.MODULE_START,

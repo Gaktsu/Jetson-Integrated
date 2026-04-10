@@ -18,7 +18,7 @@ from pipeline.recorder_utils import (
     _cleanup_old_folders,
     _create_event_folder,
     _create_writer,
-    _transcode_and_upload,
+    _upload_video,
 )
 
 logger = get_logger("pipeline.recorder")
@@ -64,7 +64,7 @@ def start_save_thread(
         target=save_loop,
         args=(
             save_queue, save_stop_event, SAVE_DIR, fps_map,
-            "MJPG", get_sensor_snapshot, state_map,
+            "X264", get_sensor_snapshot, state_map,
             RECORDING_MODE, EVENT_RECORD_BUFFER_SEC, EVENT_RECORD_POST_SEC,
         ),
         daemon=True, name="save_worker"
@@ -78,7 +78,7 @@ def save_loop(
     stop_event: threading.Event,
     save_dir: str,
     fps_map: dict[int, float],
-    codec: str = "mp4v",
+    codec: str = "X264",
     sensor_getter: Optional[Callable[[float], Dict[str, Any]]] = None,
     state_map: Optional[Dict[int, SharedState]] = None,
     recording_mode: str = "event",
@@ -126,7 +126,7 @@ def save_loop(
     current_event_folder: Optional[str] = None
     event_start_ts: Optional[float] = None
     full_event_folder: Optional[str] = None  # full 모드용 이벤트 폴더
-    transcode_threads: List[threading.Thread] = []  # 종료 시 join() 대기용
+    upload_threads: List[threading.Thread] = []  # 종료 시 join() 대기용
     shutdown_files: List[str] = []  # q 종료 시 순차 변환/업로드 대상
     shutdown_deadline: Optional[float] = None
     
@@ -385,13 +385,13 @@ def save_loop(
                                 shutdown_files.append(file_path)
                             else:
                                 t = threading.Thread(
-                                    target=_transcode_and_upload,
+                                    target=_upload_video,
                                     args=(file_path,),
                                     daemon=False,
-                                    name=f"h264_transcode_cam{cam_id}"
+                                    name=f"upload_cam{cam_id}"
                                 )
                                 t.start()
-                                transcode_threads.append(t)
+                                upload_threads.append(t)
                     recording_active[cam_id] = False
                     post_deadline[cam_id] = None
                     frame_carry_over.pop(cam_id, None)  # 녹화 종료 시 누산기 초기화
@@ -426,13 +426,13 @@ def save_loop(
                         shutdown_files.append(file_path)
                     else:
                         t = threading.Thread(
-                            target=_transcode_and_upload,
+                            target=_upload_video,
                             args=(file_path,),
                             daemon=False,
-                            name=f"h264_transcode_cam{cam_id}"
+                            name=f"upload_cam{cam_id}"
                         )
                         t.start()
-                        transcode_threads.append(t)
+                        upload_threads.append(t)
             except Exception as e:
                 logger.event_error(
                     EventType.ERROR_OCCURRED,
@@ -453,17 +453,17 @@ def save_loop(
             for file_path in sorted(dict.fromkeys(shutdown_files), key=_cam_sort_key):
                 logger.event_info(
                     EventType.MODULE_START,
-                    "q 종료: 순차 변환/업로드 시작",
+                    "q 종료: 업로드 시작",
                     {"file": file_path}
                 )
-                _transcode_and_upload(file_path)
+                _upload_video(file_path)
 
-        # 미완료 트랜스코딩 작업이 있으면 완료될 때까지 대기
-        for t in transcode_threads:
+        # 미완료 업로드 작업이 있으면 완료될 때까지 대기
+        for t in upload_threads:
             if t.is_alive():
                 logger.event_info(
                     EventType.MODULE_STOP,
-                    "H.264 변환 완료 대기 중",
+                    "업로드 완료 대기 중",
                     {"thread": t.name}
                 )
                 t.join()
