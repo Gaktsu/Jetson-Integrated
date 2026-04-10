@@ -88,8 +88,21 @@ class EventScreen(QWidget):
             lbl.setWordWrap(True)
             self.list_layout.addWidget(lbl)
 
+    # UI 이벤트 화면에 표시할 이벤트 타입 목록
+    # 여기에 없는 타입은 디버그용으로만 남고 화면에 표시되지 않음
+    _DISPLAY_EVENTS = {
+        "SYSTEM_START",
+        "SYSTEM_STOP",
+        "DETECTION_RESULT",
+        "ERROR_OCCURRED",
+        "USER_INPUT",
+        "CAMERA_ERROR",
+    }
+
     def _read_log_entries(self):
-        """logs/event_project.log 에서 이벤트 항목 파싱. [(표시 텍스트, 레벨), ...] 반환"""
+        """logs/event_project.log 에서 이벤트 항목 파싱. [(표시 텍스트, 레벨), ...] 반환
+        _DISPLAY_EVENTS에 해당하는 항목만 반환 (운영/디버그 로그 제외)
+        """
         log_path = os.path.join(PROJECT_ROOT, "logs", "event_project.log")
         if not os.path.exists(log_path):
             return []
@@ -109,15 +122,19 @@ class EventScreen(QWidget):
                     try:
                         data = json.loads(raw)
                         event = data.get("event", "")
+
+                        # 표시 대상 이벤트 타입이 아니면 건너뜀
+                        if event not in self._DISPLAY_EVENTS:
+                            continue
+
                         message = data.get("message", "")
-                        module = data.get("module", "")
                         cam_data = data.get("data", {})
                         cam_info = ""
                         if isinstance(cam_data, dict) and "camera_index" in cam_data:
                             cam_info = f" (CAM {cam_data['camera_index']})"
                         text = f"{timestamp_str}  [{event}]  {message}{cam_info}"
                     except (json.JSONDecodeError, KeyError):
-                        text = f"{timestamp_str}  {raw[:80]}"
+                        continue  # 파싱 불가 줄은 UI에 표시하지 않음
                     entries.append((text, level))
         except Exception:
             pass
