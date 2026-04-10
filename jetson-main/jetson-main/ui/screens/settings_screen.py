@@ -65,8 +65,9 @@ class SettingsScreen(QWidget):
         if hasattr(self.main_window, '_buzzer_timer'):
             self.main_window._buzzer_timer.stop()
 
-        # 2) 창 숨기기
+        # 2) 창 즉시 숨기고, hide가 실제로 화면에 반영되도록 강제 렌더링
         self.main_window.hide()
+        QApplication.processEvents()
 
         # 3) 현재 이벤트 처리가 끝난 뒤 종료 (singleShot 0ms 지연)
         QTimer.singleShot(0, QApplication.quit)
