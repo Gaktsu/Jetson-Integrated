@@ -172,6 +172,18 @@ def _single_cam_inference_loop(
 
         intrusion = warning_level != WarningLevel.SAFE
 
+        # ROI 내 객체 수 계산
+        roi_count = 0
+        if dynamic_poly is not None:
+            import cv2 as _cv2
+            poly_arr = np.array(dynamic_poly, dtype=np.int32)
+            for det in detections:
+                x1, y1, x2, y2 = det["bbox"]
+                foot_x = (x1 + x2) // 2
+                foot_y = y2
+                if _cv2.pointPolygonTest(poly_arr, (float(foot_x), float(foot_y)), False) >= 0:
+                    roi_count += 1
+
         with state.det_lock:
             prev_warning = state.last_warning_level
             state.last_detections = detections
@@ -182,7 +194,13 @@ def _single_cam_inference_loop(
             if intrusion:
                 state.last_intrusion_ts = timestamp
 
-        if intrusion and warning_level != prev_warning:
+        # ROI 내 객체가 있을 때만 이벤트 로그 기록
+        if intrusion and roi_count > 0 and warning_level != prev_warning:
+            logger.event_info(
+                EventType.DETECTION_RESULT,
+                "위험 영역 내 객체 탐지",
+                {"cam": cam_id, "roi_count": roi_count, "warning": warning_level.value},
+            )
             upload_event_log(
                 event_type=warning_level.value,
                 cam_id=cam_id,

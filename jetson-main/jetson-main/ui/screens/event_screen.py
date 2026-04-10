@@ -122,12 +122,10 @@ class EventScreen(QWidget):
                         if event not in self._DISPLAY_EVENTS:
                             continue
 
-                        message = data.get("message", "")
-                        cam_data = data.get("data", {})
-                        cam_info = ""
-                        if isinstance(cam_data, dict) and "camera_index" in cam_data:
-                            cam_info = f" (CAM {cam_data['camera_index']})"
-                        text = f"{timestamp_str}  [{event}]  {message}{cam_info}"
+                        msg_data = data.get("data", {})
+                        cam_id = msg_data.get("cam", "?")
+                        roi_count = msg_data.get("roi_count", "?")
+                        text = f"{timestamp_str}에 위험 영역 내 객체 탐지 : {roi_count} (CAM {cam_id})"
                     except (json.JSONDecodeError, KeyError):
                         continue  # 파싱 불가 줄은 UI에 표시하지 않음
                     entries.append((text, level))
