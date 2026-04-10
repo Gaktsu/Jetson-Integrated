@@ -3,11 +3,14 @@
 """
 import cv2
 import os
+import sys
 import threading
 import time
 import queue
 import numpy as np
 from typing import Any, Dict, List, Optional, Tuple
+from PyQt5.QtWidgets import QApplication
+from ui_app import MainApp
 from config.settings import (
     CAMERA_INDICES,
     DISPLAY_MODE,
@@ -362,90 +365,12 @@ def main():
     buzzer = Buzzer(pin=32, use_board=True)
     buzzer.start()
 
-    # 6. 디스플레이 창 설정
-    cv2.namedWindow(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN)
-    cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-
-    # 7. 메인 표시 루프
-    cam_idx = 0
-    last_frame_seq = -1
-    draw_ms = 0.0
-    draw_ms_list = [0.0] * len(cameras)   # split 모드용 카메라별 draw_ms
-    last_seqs = [-1] * len(cameras)        # split 모드용 프레임 시퀀스 추적
-    roi_polygons = _load_roi_polygons()    # 카메라별 ROI 폴리곤
+    # 6. PyQt5 UI 실행 (SharedState 리스트를 LiveScreen에 주입)
     try:
-        logger.event_info(EventType.STATE_CHANGE, "메인 루프 시작",
-                          {"exit_key": "q",
-                           "switch_key": "c" if DISPLAY_MODE == "switch" else "없음",
-                           "display_mode": DISPLAY_MODE,
-                           "num_cameras": len(cameras)})
-        while True:
-            if DISPLAY_MODE == "split":
-                # ── 분할 모드: 모든 카메라 동시 표시 ──
-                new_seqs = [s.latest_frame_seq for s in states]
-                if new_seqs == last_seqs:
-                    time.sleep(0.001)
-                    continue
-                last_seqs = new_seqs[:]
-
-                combined, any_intrusion, draw_ms_list = _build_split_frame(
-                    states, fps_counters, draw_ms_list, roi_polygons
-                )
-                buzzer.activate() if any_intrusion else buzzer.deactivate()
-                cv2.imshow(WINDOW_NAME, combined)
-                key = cv2.waitKey(1) & 0xFF
-                if key == ord('q'):
-                    logger.event_info(EventType.USER_INPUT, "종료 신호 감지", {"key": "q"})
-                    cv2.destroyAllWindows()
-                    cv2.waitKey(1)
-                    break
-                elif key == ord('w'):
-                    _open_roi_setup(states)
-                    roi_polygons = _load_roi_polygons()  # ROI 재설정 반영
-
-            else:
-                # ── 전환 모드: 한 카메라씩, [C] 키로 전환 ──
-                frame, seq, detections, intrusion, last_intrusion_ts = _get_current_frame(states, cam_idx)
-                if frame is None or seq == last_frame_seq:
-                    time.sleep(0.001)
-                    continue
-                last_frame_seq = seq
-
-                fps = fps_counters[CAMERA_INDICES[cam_idx]].update()
-                buzzer.activate() if intrusion else buzzer.deactivate()
-                saving = _determine_saving_global(states)  # 모든 카메라 기준
-
-                state = states[cam_idx]
-                with state.det_lock:
-                    warning_level = state.last_warning_level
-                t_draw = time.perf_counter()
-                frame_drawn = draw_detections(
-                    frame, detections, fps, saving, CAMERA_INDICES[cam_idx],
-                    intrusion=intrusion,
-                    capture_ms=state.capture_ms,
-                    inference_ms=state.inference_ms,
-                    postprocess_ms=state.postprocess_ms,
-                    draw_ms=draw_ms,
-                    roi_polygon=roi_polygons.get(CAMERA_INDICES[cam_idx]),
-                    forklift_speed=state.forklift_speed,
-                    warning_level=warning_level,
-                )
-                draw_ms = (time.perf_counter() - t_draw) * 1000
-
-                cv2.imshow(WINDOW_NAME, frame_drawn)
-                key = cv2.waitKey(1) & 0xFF
-                cam_idx, should_quit = _handle_keypress(key, cam_idx, len(cameras))
-                if should_quit:
-                    cv2.destroyAllWindows()
-                    cv2.waitKey(1)
-                    break
-                if key == ord('c'):
-                    last_frame_seq = -1  # 카메라 전환 시 이전 시퀀스 초기화
-                elif key == ord('w'):
-                    _open_roi_setup(states)
-                    roi_polygons = _load_roi_polygons()  # ROI 재설정 반영
-                    last_frame_seq = -1  # 창 복원 후 이전 시퀀스 초기화
-
+        app = QApplication(sys.argv)
+        window = MainApp(shared_states=states, buzzer=buzzer)
+        window.show()
+        app.exec_()
     except KeyboardInterrupt:
         logger.event_warning(EventType.USER_INPUT, "키보드 인터럽트로 종료")
     except Exception as e:
