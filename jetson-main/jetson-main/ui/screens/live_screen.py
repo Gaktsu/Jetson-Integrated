@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QImage, QPixmap
 from config.settings import CAMERA_INDICES, PROJECT_ROOT
 from ui.renderer import draw_detections
-from ai.detector import load_roi_polygon
+from ai.detector import Detection, WarningLevel, load_roi_polygon
 
 
 class _PipelineAiProxy:
@@ -257,27 +257,34 @@ class LiveScreen(QWidget):
         """모든 SharedState의 경고 레벨 중 최고값을 상단 상태바에 반영."""
         if self.shared_states is None:
             return
-        max_level_val = 0
+
+        _order = [WarningLevel.SAFE, WarningLevel.BLIND_SPOT,
+                  WarningLevel.APPROACH, WarningLevel.URGENT]
+
+        max_level = WarningLevel.SAFE
         max_speed = 0
         for state in self.shared_states:
             with state.det_lock:
-                wl = state.last_warning_level
+                wl  = state.last_warning_level
                 spd = getattr(state, 'forklift_speed', 0) or 0
-            level_val = getattr(wl, 'value', 0) if wl is not None else 0
-            if level_val > max_level_val:
-                max_level_val = level_val
+            if wl is not None and wl in _order:
+                if _order.index(wl) > _order.index(max_level):
+                    max_level = wl
             if spd > max_speed:
                 max_speed = spd
 
-        if max_level_val == 0:
+        if max_level == WarningLevel.SAFE:
             color, bg = "#00ff00", "#003300"
             msg = f"SAFE  |  Speed: {max_speed}/5"
-        elif max_level_val == 1:
+        elif max_level == WarningLevel.BLIND_SPOT:
             color, bg = "#ffff00", "#333300"
-            msg = f"WARNING  |  Speed: {max_speed}/5"
-        else:
+            msg = f"CAUTION: BLIND SPOT  |  Speed: {max_speed}/5"
+        elif max_level == WarningLevel.APPROACH:
+            color, bg = "#ffa500", "#332200"
+            msg = f"WARNING: APPROACHING  |  Speed: {max_speed}/5"
+        else:  # URGENT
             color, bg = "#ff4444", "#330000"
-            msg = f"DANGER  |  Speed: {max_speed}/5"
+            msg = f"URGENT: STOP!  |  Speed: {max_speed}/5"
 
         self.alert_bar.setText(msg)
         self.alert_bar.setStyleSheet(
