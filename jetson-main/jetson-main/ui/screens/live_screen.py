@@ -1,15 +1,11 @@
 import cv2
 import datetime
-import os
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QImage, QPixmap
 
-# AI 위험 감지 모듈
-from ai_module.ai_detector import DangerDetector
-
 class LiveScreen(QWidget):
-    def __init__(self, main_window):
+    def __init__(self, main_window, shared_states=None):
         super().__init__()
         self.main_window = main_window
         self.setStyleSheet("background-color: black;") # 전체 배경을 검은색으로 설정
@@ -19,11 +15,11 @@ class LiveScreen(QWidget):
         # 화면 기본 위치 매핑
         self.cam_mapping = [0, 1, 2, 3]
         
-        # 4개 카메라의 AI 처리 전 '원본 프레임'을 임시 보관하는 배열
+        # 4개 카메라의 최신 프레임을 임시 보관 (ROI 설정 화면 등에서 참조)
         self.current_raw_frames = [None] * 4
 
-        # AI 감지기 객체를 생성 (AI 모델 파일 경로 및 젯슨 나노 부저 핀 번호 설정)
-        self.ai = DangerDetector(model_path='ai_module/best.pt', buzzer_pin=18)
+        # pipeline의 SharedState 리스트 — 카메라/AI/녹화는 모두 pipeline이 담당
+        self.shared_states = shared_states
 
         # 4개의 카메라 영상을 보여줄 UI 라벨(영역)을 생성
         self.cam_labels = []
@@ -83,37 +79,8 @@ class LiveScreen(QWidget):
         self.time_label.raise_()
         self.status_label.raise_()
 
-        # 카메라 영상 장치와 동영상 저장 객체를 담을 리스트 초기화
-        self.caps = []
-        self.writers = []
-        
-        # 동영상을 저장할 'records' 폴더가 없다면 새로 생성
-        if not os.path.exists("records"):
-            os.makedirs("records")
-
-        # 파일명에 쓸 현재 시간을 문자열로 포맷팅합니다.
-        now_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        # 동영상 저장용 코덱 설정 (XVID 포맷)
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-
-        # 4대의 카메라를 순서대로 연결하고 녹화를 준비하는 반복문
-        for i in range(4):
-            # 젯슨 나노용 카메라 연결 포맷인 V4L2를 사용하여 카메라 캡처 시도
-            cap = cv2.VideoCapture(i, cv2.CAP_V4L2) 
-            if cap.isOpened():
-                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)  # 카메라 입력 가로 해상도
-                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480) # 카메라 입력 세로 해상도
-                self.caps.append(cap)
-                
-                # 파일 저장 경로 지정 (예: records/20260403_151956_CAM1.avi)
-                filename = f"records/{now_str}_CAM{i+1}.avi"
-                # 초당 15프레임(15.0)으로 영상을 기록하는 VideoWriter 생성
-                out = cv2.VideoWriter(filename, fourcc, 15.0, (640, 480))
-                self.writers.append(out)
-            else:
-                # 카메라가 없거나 연결에 실패하면 빈자리(None)를 채워 넣습니다.
-                self.caps.append(None)
-                self.writers.append(None)
+        # 카메라/녹화는 pipeline(capture.py, recorder.py)이 전담
+        # live_screen은 SharedState에서 프레임만 읽음
 
         # 정해진 시간마다 함수를 반복 실행해주는 타이머 도구
         self.timer = QTimer()
@@ -129,23 +96,15 @@ class LiveScreen(QWidget):
         # 이번 턴에 모니터에 출력할 4개의 화면 데이터를 담을 빈 리스트
         frames = [None] * 4
 
-        # 연결된 각 카메라에서 프레임(사진 1장)을 읽음
-        for i, cap in enumerate(self.caps):
-            if cap is not None and cap.isOpened():
-                ret, frame = cap.read() # ret: 프레임 읽기 성공 여부, frame: 사진 데이터
-                if ret:
-                    # 1. AI 선을 그리기 전의 순수 원본 프레임을 저장
-                    self.current_raw_frames[i] = frame.copy()
-
-                    # 2. AI 모듈에 넘겨서 위험 구역 선을 그리고, 사람이 들어왔는지 판단 결과 받음
-                    frame, _ = self.ai.process_frame(frame, i)
-
-                    # 3. AI 선과 경고 문구가 덧그려진 프레임을 동영상 파일로 저장
-                    if self.writers[i] is not None:
-                        self.writers[i].write(frame)
-
-                    # 4. 화면 출력용 리스트에 최종 프레임을 등록
-                    frames[i] = frame
+        # SharedState에서 최신 프레임을 읽어옴 (AI/녹화는 pipeline이 처리)
+        if self.shared_states is not None:
+            for i, state in enumerate(self.shared_states):
+                if i >= 4:
+                    break
+                with state.frame_lock:
+                    if state.latest_frame is not None:
+                        frames[i] = state.latest_frame.copy()
+                        self.current_raw_frames[i] = frames[i]
 
         # 사용자가 화면 하나를 터치해서 확대모드일 경우
         if self.expanded_pos_index is not None:
@@ -201,14 +160,10 @@ class LiveScreen(QWidget):
             else: pos = 3                       # 우하단 영역
             
             cam_idx = self.cam_mapping[pos]
-            # 터치한 위치에 연결된 카메라 화면이 정상 송출 중일 때만 확대 모드 작동
-            if self.caps[cam_idx] is not None:
+            # 최신 프레임이 있을 때만 확대 모드 작동
+            if self.current_raw_frames[cam_idx] is not None:
                 self.expanded_pos_index = pos
 
-    # 프로그램 창이 완전히 닫히거나 다른 화면으로 넘어갈 때 시스템 자원을 정리하는 함수
+    # 프로그램 창이 닫힐 때 — 카메라/녹화/AI 정리는 pipeline(main.py)이 담당
     def closeEvent(self, event):
-        self.ai.cleanup()
-        for cap in self.caps:
-            if cap is not None: cap.release()
-        for writer in self.writers:
-            if writer is not None: writer.release()
+        pass

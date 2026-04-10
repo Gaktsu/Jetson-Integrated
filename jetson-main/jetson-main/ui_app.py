@@ -56,13 +56,8 @@ class MainApp(QMainWindow):
         self.stacked_widget.setCurrentIndex(index)
 
     def closeEvent(self, event):
-        for cap in self.live_screen.caps:
-            if cap is not None and cap.isOpened():
-                cap.release()
-        for writer in self.live_screen.writers:
-            if writer is not None:
-                writer.release()
-        self.live_screen.ai.cleanup()
+        # 카메라/녹화/AI 정리는 pipeline(main.py)이 담당
+        pass
 
 
 if __name__ == "__main__":
