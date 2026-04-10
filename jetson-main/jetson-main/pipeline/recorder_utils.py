@@ -56,19 +56,104 @@ def _build_gst_h264_pipeline(w: int, h: int, fps: float, file_path: str) -> str:
 
 
 def _check_gstreamer_available() -> bool:
-    """OpenCV가 GStreamer 백엔드를 지원하는지 확인한다."""
-    build_info = cv2.getBuildInformation()
-    gst_available = "GStreamer" in build_info and "YES" in build_info[
-        build_info.find("GStreamer"):build_info.find("GStreamer") + 80
-    ]
-    if not gst_available:
+    """gst-launch-1.0 도구와 x264enc 플러그인이 설치되어 있는지 확인한다."""
+    gst = shutil.which("gst-launch-1.0")
+    if gst is None:
         logger.event_error(
             EventType.ERROR_OCCURRED,
-            "OpenCV GStreamer 미지원 — OpenCV를 GStreamer 지원으로 재빌드하거나 "
-            "pip install opencv-python 대신 JetPack 기본 OpenCV를 사용하세요.",
-            {"build_info_snippet": build_info[build_info.find("GStreamer"):build_info.find("GStreamer") + 80]}
+            "gst-launch-1.0 바이너리를 찾을 수 없습니다.",
+            {"hint": "sudo apt install gstreamer1.0-tools"}
         )
-    return gst_available
+        return False
+    # x264enc 플러그인 존재 여부 확인
+    result = subprocess.run(
+        ["gst-inspect-1.0", "x264enc"],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        logger.event_error(
+            EventType.ERROR_OCCURRED,
+            "x264enc 플러그인을 찾을 수 없습니다.",
+            {"hint": "sudo apt install gstreamer1.0-plugins-ugly"}
+        )
+        return False
+    return True
+
+
+class GstH264Writer:
+    """cv2.VideoWriter 호환 인터페이스로 GStreamer H.264 저장을 수행하는 클래스.
+
+    OpenCV GStreamer 지원 없이도 동작합니다.
+    gst-launch-1.0 서브프로세스에 raw BGR 프레임을 stdin으로 전달합니다.
+    """
+
+    def __init__(self, w: int, h: int, fps_int: int, file_path: str) -> None:
+        self._proc: Optional[subprocess.Popen] = None
+        safe_path = file_path.replace("\\", "/")
+        gop = fps_int * 2
+        pipeline = (
+            f"fdsrc fd=0 ! "
+            f"video/x-raw,format=BGR,width={w},height={h},framerate={fps_int}/1 ! "
+            f"videoconvert ! "
+            f"video/x-raw,format=I420 ! "
+            f"x264enc speed-preset={_GST_H264_PRESET} tune=zerolatency "
+            f"bitrate={_GST_H264_BITRATE} key-int-max={gop} ! "
+            f"h264parse ! "
+            f"mp4mux ! "
+            f"filesink location={safe_path} sync=false"
+        )
+        logger.event_info(
+            EventType.MODULE_START,
+            "GstH264Writer 파이프라인 시작",
+            {"pipeline": pipeline, "file": safe_path}
+        )
+        try:
+            self._proc = subprocess.Popen(
+                ["gst-launch-1.0", "-e"] + pipeline.split(),
+                stdin=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+        except Exception as e:
+            logger.event_error(
+                EventType.ERROR_OCCURRED,
+                "GstH264Writer 프로세스 시작 실패",
+                {"error": str(e)}
+            )
+            self._proc = None
+
+    def isOpened(self) -> bool:
+        return self._proc is not None and self._proc.poll() is None
+
+    def write(self, frame) -> None:
+        if self._proc is None or self._proc.stdin is None:
+            return
+        try:
+            self._proc.stdin.write(frame.tobytes())
+        except (BrokenPipeError, OSError):
+            pass
+
+    def release(self) -> None:
+        if self._proc is None:
+            return
+        try:
+            if self._proc.stdin:
+                self._proc.stdin.close()
+            self._proc.wait(timeout=60)
+        except subprocess.TimeoutExpired:
+            self._proc.kill()
+            logger.event_error(
+                EventType.ERROR_OCCURRED,
+                "GstH264Writer 종료 타임아웃 — 프로세스를 강제 종료합니다.",
+                {}
+            )
+        except Exception as e:
+            logger.event_error(
+                EventType.ERROR_OCCURRED,
+                "GstH264Writer release 실패",
+                {"error": str(e)}
+            )
+        finally:
+            self._proc = None
 
 
 def _transcode_to_h264(file_path: str) -> Optional[str]:
@@ -322,8 +407,7 @@ def _create_writer(
                 "GStreamer H.264 파이프라인 생성",
                 {"pipeline": gst_pipeline}
             )
-            # VideoWriter fps 도 fps_int 로 통일 (caps framerate 와 불일치 방지)
-            writer = cv2.VideoWriter(gst_pipeline, cv2.CAP_GSTREAMER, 0, float(fps_int), (w, h))
+            writer = GstH264Writer(w, h, fps_int, file_path)
         else:
             gst_pipeline = None
             fourcc = cv2.VideoWriter_fourcc(*codec)

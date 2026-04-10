@@ -110,7 +110,7 @@ def save_loop(
             {"path": full_folder}
         )
 
-    writers: dict[int, cv2.VideoWriter] = {}
+    writers: dict[int, Any] = {}
     writer_paths: dict[int, str] = {}
     buffers: dict[int, Deque[Tuple[float, cv2.Mat]]] = {}
     recording_active: dict[int, bool] = {}
