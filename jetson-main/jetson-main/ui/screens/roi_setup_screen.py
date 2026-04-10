@@ -74,6 +74,9 @@ class RoiSetupScreen(QWidget):
 
     # 실시간 녹화 화면에서 카메라 영상을 넘겨받아 배경으로 세팅하는 함수
     def set_base_frame(self, frame, cam_idx):
+        # frame이 None이면 검은 화면으로 대체
+        if frame is None:
+            frame = np.zeros((480, 640, 3), dtype=np.uint8)
         # 넘어온 사진을 계산하기 편하게 640x480으로 고정
         self.base_frame = cv2.resize(frame, (640, 480)) 
         self.display_frame = self.base_frame.copy()
