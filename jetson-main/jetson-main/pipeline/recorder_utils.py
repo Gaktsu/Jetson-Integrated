@@ -39,6 +39,8 @@ def _build_gst_h264_pipeline(w: int, h: int, fps: float, file_path: str) -> str:
     """
     fps_int = max(1, round(fps))
     gop = fps_int * 2  # 2초 단위 키프레임 간격 (key-int-max)
+    # 파일 경로에 공백이 있을 경우를 대비해 큰따옴표로 감쌈
+    safe_path = file_path.replace("\\", "/")  # Windows 경로 구분자 통일
     return (
         f"appsrc ! "
         f"video/x-raw,format=BGR,width={w},height={h},framerate={fps_int}/1 ! "
@@ -47,8 +49,24 @@ def _build_gst_h264_pipeline(w: int, h: int, fps: float, file_path: str) -> str:
         f"bitrate={_GST_H264_BITRATE} key-int-max={gop} ! "
         f"h264parse ! "
         f"mp4mux ! "
-        f"filesink location={file_path}"
+        f'filesink location="{safe_path}"'
     )
+
+
+def _check_gstreamer_available() -> bool:
+    """OpenCV가 GStreamer 백엔드를 지원하는지 확인한다."""
+    build_info = cv2.getBuildInformation()
+    gst_available = "GStreamer" in build_info and "YES" in build_info[
+        build_info.find("GStreamer"):build_info.find("GStreamer") + 80
+    ]
+    if not gst_available:
+        logger.event_error(
+            EventType.ERROR_OCCURRED,
+            "OpenCV GStreamer 미지원 — OpenCV를 GStreamer 지원으로 재빌드하거나 "
+            "pip install opencv-python 대신 JetPack 기본 OpenCV를 사용하세요.",
+            {"build_info_snippet": build_info[build_info.find("GStreamer"):build_info.find("GStreamer") + 80]}
+        )
+    return gst_available
 
 
 def _transcode_to_h264(file_path: str) -> Optional[str]:
@@ -272,11 +290,12 @@ def _create_writer(
     try:
         h, w = frame.shape[:2]
         fps = fps_map.get(cam_id, 30.0) or 30.0
+        fps_int = max(1, round(fps))  # GStreamer caps 와 VideoWriter 에 동일하게 사용
 
         logger.event_info(
             EventType.MODULE_START,
             "_create_writer 시작",
-            {"cam_id": cam_id, "fps": fps, "codec": codec, "frame_size": (w, h), "event_folder": event_folder}
+            {"cam_id": cam_id, "fps": fps, "fps_int": fps_int, "codec": codec, "frame_size": (w, h), "event_folder": event_folder}
         )
 
         file_path = _build_event_filename(save_dir, cam_id, timestamp, sensor_data, event_folder)
@@ -292,28 +311,39 @@ def _create_writer(
         )
 
         if codec == "X264":
-            gst_pipeline = _build_gst_h264_pipeline(w, h, fps, file_path)
+            # GStreamer 사용 가능 여부 사전 확인
+            if not _check_gstreamer_available():
+                return None
+            gst_pipeline = _build_gst_h264_pipeline(w, h, fps_int, file_path)
             logger.event_info(
                 EventType.MODULE_START,
                 "GStreamer H.264 파이프라인 생성",
                 {"pipeline": gst_pipeline}
             )
-            writer = cv2.VideoWriter(gst_pipeline, cv2.CAP_GSTREAMER, 0, fps, (w, h))
+            # VideoWriter fps 도 fps_int 로 통일 (caps framerate 와 불일치 방지)
+            writer = cv2.VideoWriter(gst_pipeline, cv2.CAP_GSTREAMER, 0, float(fps_int), (w, h))
         else:
+            gst_pipeline = None
             fourcc = cv2.VideoWriter_fourcc(*codec)
             writer = cv2.VideoWriter(file_path, fourcc, fps, (w, h))
-        
+
         logger.event_info(
             EventType.MODULE_START,
             "VideoWriter 객체 생성 완료",
             {"isOpened": writer.isOpened() if writer else False}
         )
-        
+
         if not writer.isOpened():
             logger.event_error(
                 EventType.ERROR_OCCURRED,
-                "영상 저장기 생성 실패",
-                {"camera": cam_id, "path": file_path}
+                "영상 저장기 생성 실패 — GStreamer 파이프라인 또는 플러그인 문제일 수 있습니다. "
+                "터미널에서 확인: gst-inspect-1.0 x264enc",
+                {
+                    "camera": cam_id,
+                    "path": file_path,
+                    "pipeline": gst_pipeline if codec == "X264" else None,
+                    "hint": "sudo apt install gstreamer1.0-plugins-ugly 로 x264enc 설치 필요"
+                }
             )
             return None
         
