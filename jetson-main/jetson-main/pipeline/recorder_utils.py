@@ -39,17 +39,19 @@ def _build_gst_h264_pipeline(w: int, h: int, fps: float, file_path: str) -> str:
     """
     fps_int = max(1, round(fps))
     gop = fps_int * 2  # 2초 단위 키프레임 간격 (key-int-max)
-    # 파일 경로에 공백이 있을 경우를 대비해 큰따옴표로 감쌈
+    # OpenCV GStreamer 파서는 location= 뒤 따옴표를 지원하지 않으므로 제거
+    # 경로에 공백이 없도록 _build_event_filename 에서 이미 보장됨
     safe_path = file_path.replace("\\", "/")  # Windows 경로 구분자 통일
     return (
         f"appsrc ! "
         f"video/x-raw,format=BGR,width={w},height={h},framerate={fps_int}/1 ! "
         f"videoconvert ! "
+        f"video/x-raw,format=I420 ! "  # x264enc 는 I420 포맷 입력 필요
         f"x264enc speed-preset={_GST_H264_PRESET} tune=zerolatency "
         f"bitrate={_GST_H264_BITRATE} key-int-max={gop} ! "
         f"h264parse ! "
         f"mp4mux ! "
-        f'filesink location="{safe_path}"'
+        f"filesink location={safe_path} sync=false"
     )
 
 
