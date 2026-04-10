@@ -16,7 +16,7 @@ class SettingsScreen(QWidget):
         self.title_label.setAlignment(Qt.AlignCenter)
 
         self.settings_widget = QWidget(self)
-        self.settings_widget.setGeometry(100, 80, 600, 360)
+        self.settings_widget.setGeometry(100, 80, 600, 300)
         self.settings_layout = QVBoxLayout(self.settings_widget)
         self.settings_layout.setSpacing(20) # 버튼과 버튼 사이의 간격
 
@@ -26,22 +26,16 @@ class SettingsScreen(QWidget):
             QPushButton:pressed { background-color: #555; }
         """
 
-        # 1. 위험 영역 세팅 버튼 — ROI 설정 화면으로 이동
-        self.btn_roi = QPushButton("위험 영역 세팅")
-        self.btn_roi.setStyleSheet(setting_btn_style)
-        self.btn_roi.clicked.connect(self._open_roi_setup)
-
-        # 2. 저장소 포맷 (모든 영상 삭제) 버튼 생성 및 스타일 적용 / 해당 기능 미구현
+        # 1. 저장소 포맷 (모든 영상 삭제) 버튼 생성 및 스타일 적용 / 해당 기능 미구현
         self.btn_format = QPushButton("저장소 포맷 (모든 영상 삭제)")
         self.btn_format.setStyleSheet(setting_btn_style)
-        
-        # 3. 시스템 종료 버튼 — UI를 닫고 백그라운드(pipeline) 정리 후 완전 종료
+
+        # 2. 시스템 종료 버튼 — UI를 닫고 백그라운드(pipeline) 정리 후 완전 종료
         self.btn_reboot = QPushButton("시스템 종료")
         self.btn_reboot.setStyleSheet(setting_btn_style)
         self.btn_reboot.clicked.connect(self._shutdown)
 
         # 만들어진 버튼들을 세로 정렬 레이아웃에 차례대로 넣음
-        self.settings_layout.addWidget(self.btn_roi)
         self.settings_layout.addWidget(self.btn_format)
         self.settings_layout.addWidget(self.btn_reboot)
         
@@ -77,23 +71,3 @@ class SettingsScreen(QWidget):
         # 3) 현재 이벤트 처리가 끝난 뒤 종료 (singleShot 0ms 지연)
         QTimer.singleShot(0, QApplication.quit)
 
-    def _open_roi_setup(self):
-        """위험 영역 세팅 버튼: live_screen의 첫 번째 프레임을 ROI 설정 화면에 넘기고 이동."""
-        live = self.main_window.live_screen
-        # 카메라 0번(첫 번째) 프레임 우선 사용, 없으면 다른 카메라 탐색
-        frame = None
-        cam_idx = 0
-        for i, f in enumerate(live.current_raw_frames):
-            if f is not None:
-                frame = f
-                cam_idx = i
-                break
-
-        roi_screen = self.main_window.roi_setup_screen
-        if frame is not None:
-            roi_screen.set_base_frame(frame, cam_idx)
-        else:
-            # 프레임이 없으면 빈 화면으로라도 진입
-            roi_screen.set_base_frame(None, 0)
-
-        self.main_window.switch_screen(8)
