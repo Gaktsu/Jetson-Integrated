@@ -98,13 +98,21 @@ class RoiSetupScreen(QWidget):
     def update_display(self):
         if self.base_frame is None:
             return
-            
+
         img = self.base_frame.copy()
         h, w = img.shape[:2]
-        
-        # OpenCV 이미지를 PyQt에서 그릴 수 있는 캔버스(QPixmap)로 변환
-        q_img = QImage(img.data, w, h, w * 3, QImage.Format_RGB888).rgbSwapped()
-        pixmap = QPixmap.fromImage(q_img)
+
+        # BGR → RGB 변환 후 QImage 생성
+        # img_rgb를 self에 보관해 GC로 인한 세그폴트 방지
+        self._display_buf = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        q_img = QImage(
+            self._display_buf.data,
+            w, h, w * 3,
+            QImage.Format_RGB888
+        )
+        # QImage 데이터가 살아있는 동안 pixmap 생성
+        pixmap = QPixmap.fromImage(q_img.copy())  # .copy()로 QImage 메모리 독립
+
         painter = QPainter(pixmap) # 그림을 그리는 붓(Painter) 생성
         
         # 펜(테두리 선) 종류 설정

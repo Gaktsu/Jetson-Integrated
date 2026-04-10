@@ -35,9 +35,10 @@ class SettingsScreen(QWidget):
         self.btn_format = QPushButton("저장소 포맷 (모든 영상 삭제)")
         self.btn_format.setStyleSheet(setting_btn_style)
         
-        # 3. 시스템 재부팅 버튼 생성 및 스타일 적용 / 해당 기능 미구현
-        self.btn_reboot = QPushButton("시스템 재부팅")
+        # 3. 시스템 종료 버튼 — UI를 닫고 백그라운드(pipeline) 정리 후 완전 종료
+        self.btn_reboot = QPushButton("시스템 종료")
         self.btn_reboot.setStyleSheet(setting_btn_style)
+        self.btn_reboot.clicked.connect(self._shutdown)
 
         # 만들어진 버튼들을 세로 정렬 레이아웃에 차례대로 넣음
         self.settings_layout.addWidget(self.btn_roi)
@@ -56,6 +57,13 @@ class SettingsScreen(QWidget):
         """)
         # 뒤로가기 버튼을 누르면 메인 메뉴 화면으로 돌아감
         self.back_btn.clicked.connect(lambda: self.main_window.switch_screen(1))
+
+    def _shutdown(self):
+        """창을 숨긴 뒤 QApplication 이벤트루프를 종료.
+        main.py의 finally 블록에서 _cleanup()이 실행되어 pipeline 스레드가 정상 종료된다."""
+        from PyQt5.QtWidgets import QApplication
+        self.main_window.hide()
+        QApplication.quit()
 
     def _open_roi_setup(self):
         """위험 영역 세팅 버튼: live_screen의 첫 번째 프레임을 ROI 설정 화면에 넘기고 이동."""
