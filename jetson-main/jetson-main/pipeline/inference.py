@@ -60,6 +60,124 @@ def start_inference_thread(
     return threads
 
 
+def _log_aggregated_stats(cam_id: int, agg_infer: list, agg_post: list, agg_det: list) -> None:
+    """최근 5초간 추론 성능 지표를 집계하여 로그로 출력합니다."""
+    logger.event_info(
+        EventType.DATA_PROCESSED,
+        f"[집계] cam{cam_id} 추론 성능 (최근 5초)",
+        {
+            "infer_avg_ms": round(_agg_avg(agg_infer), 2),
+            "infer_max_ms": round(_agg_max(agg_infer), 2),
+            "post_avg_ms":  round(_agg_avg(agg_post),  2),
+            "det_avg":      round(_agg_avg(agg_det),   2),
+            "frames":       len(agg_infer),
+        },
+    )
+
+
+def _try_lazy_load_roi(roi_polygon, roi_path: str, cam_id: int):
+    """ROI 폴리곤이 None일 때 JSON 파일에서 지연 로드를 시도합니다."""
+    if roi_polygon is not None:
+        return roi_polygon
+    loaded = load_roi_polygon(roi_path)
+    if loaded:
+        logger.event_info(EventType.MODULE_INIT, "ROI 폴리곤 지연 로드 완료", {"cam": cam_id})
+    return loaded
+
+
+def _compute_dynamic_roi(base_poly, speed: int, px_per_speed: int):
+    """지게차 속도에 따라 위험 영역 상단을 확장한 동적 ROI 폴리곤을 반환합니다."""
+    if base_poly is None or speed <= 0:
+        return base_poly
+    arr = np.array(base_poly, dtype=np.int32)
+    top_idx = np.argsort(arr[:, 1])[:2]
+    arr[top_idx, 1] -= speed * px_per_speed
+    arr[top_idx, 1] = np.maximum(arr[top_idx, 1], 0)
+    return arr.tolist()
+
+
+def _count_persons_in_roi(detections: List[Detection], dynamic_poly) -> int:
+    """ROI 폴리곤 내부에 발끝이 있는 사람 수를 반환합니다."""
+    if dynamic_poly is None:
+        return 0
+    import cv2 as _cv2
+    poly_arr = np.array(dynamic_poly, dtype=np.int32)
+    count = 0
+    for det in detections:
+        x1, y1, x2, y2 = det["bbox"]
+        foot_x = (x1 + x2) // 2
+        foot_y = y2
+        if _cv2.pointPolygonTest(poly_arr, (float(foot_x), float(foot_y)), False) >= 0:
+            count += 1
+    return count
+
+
+def _update_detection_state(
+    state: SharedState,
+    detections: List[Detection],
+    warning_level,
+    intrusion: bool,
+    timestamp: float,
+    sensor_data,
+) -> None:
+    """탐지 결과와 경고 레벨을 SharedState에 원자적으로 기록합니다."""
+    with state.det_lock:
+        state.last_detections = detections
+        state.last_detection_ts = timestamp
+        state.last_sensor_data = sensor_data
+        state.last_intrusion = intrusion
+        state.last_warning_level = warning_level
+        if intrusion:
+            state.last_intrusion_ts = timestamp
+
+
+def _queue_intrusion_event_if_needed(
+    state: SharedState,
+    cam_id: int,
+    warning_level,
+    intrusion: bool,
+    roi_count: int,
+    last_log_time: float,
+    cooldown_sec: float,
+) -> float:
+    """ROI 침입 시 쿨다운을 확인하고 이벤트 로그 + 업로드 큐 전달. 갱신된 last_log_time 반환."""
+    if not (intrusion and roi_count > 0):
+        return last_log_time
+    now_t = time.perf_counter()
+    if now_t - last_log_time < cooldown_sec:
+        return last_log_time
+    logger.event_info(
+        EventType.DETECTION_RESULT,
+        "위험 영역 내 객체 탐지",
+        {"cam": cam_id, "roi_count": roi_count, "warning": warning_level.value},
+    )
+    try:
+        state.event_queue.put_nowait((warning_level.value, cam_id, state.forklift_speed))
+    except Exception:
+        pass
+    return now_t
+
+
+def _store_smoothed_detections(
+    state: SharedState,
+    seq: int,
+    smoothed: List[Detection],
+) -> None:
+    """스무딩된 탐지 결과를 히스토리·현재·유효 탐지 버퍼에 저장합니다."""
+    with state.detection_history_lock:
+        state.detection_history[seq] = smoothed
+        if len(state.detection_history) > 500:
+            oldest_seq = min(state.detection_history.keys())
+            del state.detection_history[oldest_seq]
+
+    with state.smoothed_detections_lock:
+        state.smoothed_detections = smoothed
+
+    if smoothed:
+        with state.last_valid_detections_lock:
+            state.last_valid_detections = smoothed
+
+
 def _single_cam_inference_loop(
     model: YOLOInference,
     state: SharedState,
@@ -128,17 +246,7 @@ def _single_cam_inference_loop(
         # 5초마다 집계 로그
         now = time.perf_counter()
         if now - _agg_start >= _AGG_INTERVAL:
-            logger.event_info(
-                EventType.DATA_PROCESSED,
-                f"[집계] cam{cam_id} 추론 성능 (최근 5초)",
-                {
-                    "infer_avg_ms": round(_agg_avg(_agg_infer), 2),
-                    "infer_max_ms": round(_agg_max(_agg_infer), 2),
-                    "post_avg_ms":  round(_agg_avg(_agg_post),  2),
-                    "det_avg":      round(_agg_avg(_agg_det),   2),
-                    "frames":       len(_agg_infer),
-                },
-            )
+            _log_aggregated_stats(cam_id, _agg_infer, _agg_post, _agg_det)
             _agg_start = now
             _agg_infer.clear()
             _agg_post.clear()
@@ -147,24 +255,13 @@ def _single_cam_inference_loop(
         sensor_data = sensor_getter(timestamp) if sensor_getter else None
 
         # ROI 지연 로드
-        if roi_polygon is None:
-            roi_polygon = load_roi_polygon(roi_path)
-            if roi_polygon:
-                logger.event_info(EventType.MODULE_INIT, "ROI 폴리곤 지연 로드 완료", {"cam": cam_id})
-
+        roi_polygon = _try_lazy_load_roi(roi_polygon, roi_path, cam_id)
         base_poly = roi_polygon
 
-        # ── 동적 ROI 계산 ──
-        dynamic_poly = base_poly
-        speed = state.forklift_speed
-        if base_poly is not None and speed > 0:
-            arr = np.array(base_poly, dtype=np.int32)
-            top_idx = np.argsort(arr[:, 1])[:2]
-            arr[top_idx, 1] -= speed * DYNAMIC_ROI_PX_PER_SPEED
-            arr[top_idx, 1] = np.maximum(arr[top_idx, 1], 0)
-            dynamic_poly = arr.tolist()
+        # 동적 ROI 계산 (속도 기반 상단 확장)
+        dynamic_poly = _compute_dynamic_roi(base_poly, state.forklift_speed, DYNAMIC_ROI_PX_PER_SPEED)
 
-        # ── TTC 분석 → 경고 레벨 산출 ──
+        # TTC 분석 → 경고 레벨 산출
         with state.track_history_lock:
             warning_level = analyze_ttc(detections, dynamic_poly, state.track_history)
             active_ids: List[int] = [
@@ -174,63 +271,16 @@ def _single_cam_inference_loop(
             cleanup_track_history(state.track_history, active_ids)
 
         intrusion = warning_level != WarningLevel.SAFE
+        roi_count = _count_persons_in_roi(detections, dynamic_poly)
 
-        # ROI 내 객체 수 계산
-        roi_count = 0
-        if dynamic_poly is not None:
-            import cv2 as _cv2
-            poly_arr = np.array(dynamic_poly, dtype=np.int32)
-            for det in detections:
-                x1, y1, x2, y2 = det["bbox"]
-                foot_x = (x1 + x2) // 2
-                foot_y = y2
-                if _cv2.pointPolygonTest(poly_arr, (float(foot_x), float(foot_y)), False) >= 0:
-                    roi_count += 1
+        _update_detection_state(state, detections, warning_level, intrusion, timestamp, sensor_data)
+        _last_log_time = _queue_intrusion_event_if_needed(
+            state, cam_id, warning_level, intrusion, roi_count,
+            _last_log_time, _LOG_COOLDOWN_SEC,
+        )
 
-        with state.det_lock:
-            prev_warning = state.last_warning_level
-            state.last_detections = detections
-            state.last_detection_ts = timestamp
-            state.last_sensor_data = sensor_data
-            state.last_intrusion = intrusion
-            state.last_warning_level = warning_level
-            if intrusion:
-                state.last_intrusion_ts = timestamp
-
-        # ROI 내 객체가 있을 때만 이벤트 로그 기록 (쿨다운 적용)
-        now_t = time.perf_counter()
-        if intrusion and roi_count > 0 and (now_t - _last_log_time) >= _LOG_COOLDOWN_SEC:
-            _last_log_time = now_t
-            logger.event_info(
-                EventType.DETECTION_RESULT,
-                "위험 영역 내 객체 탐지",
-                {"cam": cam_id, "roi_count": roi_count, "warning": warning_level.value},
-            )
-            # 업로드 책임은 uploader 워커 스레드가 담당 — 큐에 이벤트만 전달
-            try:
-                state.event_queue.put_nowait((
-                    warning_level.value,
-                    cam_id,
-                    state.forklift_speed,
-                ))
-            except Exception:
-                pass  # 큐가 가득 찬 경우 무시
-
-        # smoothing + 히스토리
         smoothed = _smooth_detections(state.smoothed_detections, detections)
-
-        with state.detection_history_lock:
-            state.detection_history[seq] = smoothed
-            if len(state.detection_history) > 500:
-                oldest_seq = min(state.detection_history.keys())
-                del state.detection_history[oldest_seq]
-
-        with state.smoothed_detections_lock:
-            state.smoothed_detections = smoothed
-
-        if smoothed:
-            with state.last_valid_detections_lock:
-                state.last_valid_detections = smoothed
+        _store_smoothed_detections(state, seq, smoothed)
 
     logger.event_info(
         EventType.MODULE_STOP,

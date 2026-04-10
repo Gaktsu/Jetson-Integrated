@@ -70,6 +70,114 @@ def draw_results(
 
     return frame
 
+_LEVEL_COLOR = {
+    WarningLevel.SAFE:       (0, 255, 0),
+    WarningLevel.BLIND_SPOT: (0, 255, 255),
+    WarningLevel.APPROACH:   (0, 165, 255),
+    WarningLevel.URGENT:     (0, 0, 255),
+}
+_LEVEL_MSG = {
+    WarningLevel.SAFE:       "SAFE / NORMAL DRIVING",
+    WarningLevel.BLIND_SPOT: "CAUTION: BLIND SPOT OCCUPIED",
+    WarningLevel.APPROACH:   "WARNING: PERSON APPROACHING",
+    WarningLevel.URGENT:     "URGENT: RAPID APPROACH! STOP!",
+}
+
+
+def _resolve_warning_level(
+    warning_level: Optional[WarningLevel],
+    intrusion: bool,
+) -> WarningLevel:
+    """warning_level이 None일 때 intrusion 플래그로 하위 호환 변환."""
+    if warning_level is not None:
+        return warning_level
+    return WarningLevel.BLIND_SPOT if intrusion else WarningLevel.SAFE
+
+
+def _draw_roi_overlay(
+    frame: cv2.Mat,
+    roi_polygon: Optional[Sequence[Sequence[int]]],
+    color,
+) -> Optional[np.ndarray]:
+    """ROI 폴리곤을 반투명 채우기 + 테두리로 그립니다. poly_arr 반환."""
+    if roi_polygon is None or len(roi_polygon) < 3:
+        return None
+    poly_arr = np.array(roi_polygon, dtype=np.int32)
+    overlay = frame.copy()
+    cv2.fillPoly(overlay, [poly_arr], color)
+    cv2.addWeighted(overlay, 0.15, frame, 0.85, 0, frame)
+    cv2.polylines(frame, [poly_arr], True, color, 2)
+    return poly_arr
+
+
+def _draw_person_foot_dots(
+    frame: cv2.Mat,
+    detections: List[Detection],
+    poly_arr: Optional[np.ndarray],
+    alert_color,
+) -> None:
+    """사람 탐지 결과의 발끝 점과 트랙 ID를 프레임에 그립니다."""
+    for det in detections:
+        x1, y1, x2, y2 = det["bbox"]
+        if det["class_id"] != 0:
+            continue
+        foot_x = (x1 + x2) // 2
+        foot_y = y2
+        is_inside = (
+            poly_arr is not None and
+            cv2.pointPolygonTest(poly_arr, (float(foot_x), float(foot_y)), False) >= 0
+        )
+        dot_color = alert_color if is_inside else (255, 0, 0)
+        cv2.circle(frame, (foot_x, foot_y), 7, dot_color, -1)
+        tid = det.get("track_id")
+        if tid is not None:
+            label = f"ID:{tid}"
+            (tw, _), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+            cv2.putText(frame, label, (foot_x - tw // 2, foot_y + 22),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+
+def _draw_status_bar(
+    frame: cv2.Mat,
+    alarm_msg: str,
+    screen_color,
+    forklift_speed: int,
+    camera_index: int,
+    saving: bool,
+) -> None:
+    """상단 상태바(배경·경고 메시지·속도·카메라번호·Saving 표시)를 그립니다."""
+    h, w = frame.shape[:2]
+    BAR_H = 55
+    cv2.rectangle(frame, (0, 0), (w, BAR_H), (0, 0, 0), -1)
+
+    cv2.putText(frame, alarm_msg, (12, 36),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.75, screen_color, 2, cv2.LINE_AA)
+
+    speed_text = f"Speed: {forklift_speed}/5"
+    spd_size = cv2.getTextSize(speed_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
+    cv2.putText(frame, speed_text, (w - spd_size[0] - 12, 36),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)
+
+    cam_text = f"CAM {camera_index}"
+    cam_sz = cv2.getTextSize(cam_text, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)[0]
+    cv2.putText(frame, cam_text, (w - cam_sz[0] - 10, BAR_H + 22),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (200, 200, 200), 1, cv2.LINE_AA)
+
+    if saving:
+        sav_size = cv2.getTextSize("Saving...", cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)[0]
+        cv2.putText(frame, "Saving...", (w - sav_size[0] - 12, BAR_H + 44),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 255), 2, cv2.LINE_AA)
+
+
+def _draw_camera_label_only(frame: cv2.Mat, camera_index: int) -> None:
+    """상태바 숨김 모드: 카메라 번호만 우상단에 표시합니다."""
+    w = frame.shape[1]
+    cam_text = f"CAM {camera_index}"
+    cam_sz = cv2.getTextSize(cam_text, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)[0]
+    cv2.putText(frame, cam_text, (w - cam_sz[0] - 6, 18),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1, cv2.LINE_AA)
+
+
 def draw_detections(
     frame: cv2.Mat,
     detections: List[Detection],
@@ -91,90 +199,18 @@ def draw_detections(
 
     상단 상태바: 경고 레벨별 색상 + 알람 메시지 + 속도 레벨
     ROI 오버레이: 경고 레벨 색상으로 테두리
-    바운딩박스: ROI 내부 = 경고색, 외부 = 초록
-    우상단: Time / FPS / Detected / 타이밍 정보
+    발끝 점: ROI 내부=경고색, 외부=파랑
     """
-    h, w = frame.shape[:2]
-
-    # ── 경고 레벨 → 색상·메시지 매핑 (yolo_test-main 기준) ──
-    # warning_level이 None이면 intrusion 플래그로 하위 호환
-    if warning_level is None:
-        warning_level = WarningLevel.BLIND_SPOT if intrusion else WarningLevel.SAFE
-
-    _LEVEL_COLOR = {
-        WarningLevel.SAFE:       (0, 255, 0),    # 초록
-        WarningLevel.BLIND_SPOT: (0, 255, 255),  # 노랑
-        WarningLevel.APPROACH:   (0, 165, 255),  # 주황
-        WarningLevel.URGENT:     (0, 0, 255),    # 빨강
-    }
-    _LEVEL_MSG = {
-        WarningLevel.SAFE:       "SAFE / NORMAL DRIVING",
-        WarningLevel.BLIND_SPOT: "CAUTION: BLIND SPOT OCCUPIED",
-        WarningLevel.APPROACH:   "WARNING: PERSON APPROACHING",
-        WarningLevel.URGENT:     "URGENT: RAPID APPROACH! STOP!",
-    }
+    warning_level = _resolve_warning_level(warning_level, intrusion)
     screen_color = _LEVEL_COLOR[warning_level]
     alarm_msg    = _LEVEL_MSG[warning_level]
 
-    # ── 폴리곤 ROI 오버레이 (경고 레벨 색상) ──
-    poly_arr = None
-    if roi_polygon is not None and len(roi_polygon) >= 3:
-        poly_arr = np.array(roi_polygon, dtype=np.int32)
-        overlay = frame.copy()
-        cv2.fillPoly(overlay, [poly_arr], screen_color)
-        cv2.addWeighted(overlay, 0.15, frame, 0.85, 0, frame)
-        cv2.polylines(frame, [poly_arr], True, screen_color, 2)
+    poly_arr = _draw_roi_overlay(frame, roi_polygon, screen_color)
+    _draw_person_foot_dots(frame, detections, poly_arr, screen_color)
 
-    # ── 발끝 점 + ID 그리기 (yolo_test-main 스타일 — 바운딩박스 없음) ──
-    for det in detections:
-        x1, y1, x2, y2 = det["bbox"]
-        if det["class_id"] == 0:  # person
-            foot_x = (x1 + x2) // 2
-            foot_y = y2
-            is_inside = (
-                poly_arr is not None and
-                cv2.pointPolygonTest(poly_arr, (float(foot_x), float(foot_y)), False) >= 0
-            )
-            dot_color = screen_color if is_inside else (255, 0, 0)  # ROI 내부=경고색, 외부=파랑
-            cv2.circle(frame, (foot_x, foot_y), 7, dot_color, -1)
-            tid = det.get("track_id")
-            if tid is not None:
-                label = f"ID:{tid}"
-                (tw, _), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-                cv2.putText(frame, label, (foot_x - tw // 2, foot_y + 22),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
-
-    # ── 상단 상태바 (yolo_test-main 스타일) ──
     if show_status_bar:
-        BAR_H = 55
-        cv2.rectangle(frame, (0, 0), (w, BAR_H), (0, 0, 0), -1)
-
-        # 알람 메시지 (좌측)
-        cv2.putText(frame, alarm_msg, (12, 36),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, screen_color, 2, cv2.LINE_AA)
-
-        # 속도 레벨 (우측)
-        speed_text = f"Speed: {forklift_speed}/5"
-        spd_size = cv2.getTextSize(speed_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
-        cv2.putText(frame, speed_text, (w - spd_size[0] - 12, 36),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)
-
-        # Saving... (속도 레벨 아래)
-        # ── 카메라 번호 (상태바 바로 아래 우상단) ──
-        cam_text = f"CAM {camera_index}"
-        cam_sz = cv2.getTextSize(cam_text, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)[0]
-        cv2.putText(frame, cam_text, (w - cam_sz[0] - 10, BAR_H + 22),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (200, 200, 200), 1, cv2.LINE_AA)
-
-        if saving:
-            sav_size = cv2.getTextSize("Saving...", cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)[0]
-            cv2.putText(frame, "Saving...", (w - sav_size[0] - 12, BAR_H + 44),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 255), 2, cv2.LINE_AA)
+        _draw_status_bar(frame, alarm_msg, screen_color, forklift_speed, camera_index, saving)
     else:
-        # 상태바 숨김 시 카메라 번호만 우상단에 표시
-        cam_text = f"CAM {camera_index}"
-        cam_sz = cv2.getTextSize(cam_text, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)[0]
-        cv2.putText(frame, cam_text, (w - cam_sz[0] - 6, 18),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1, cv2.LINE_AA)
+        _draw_camera_label_only(frame, camera_index)
 
     return frame

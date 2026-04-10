@@ -7,6 +7,7 @@ live_settings_screen / roi_setup_screen 에서 'live_screen.ai' 로 참조되는
 import json
 import os
 
+from ai.detector import load_roi_polygon
 from config.settings import CAMERA_INDICES, PROJECT_ROOT
 
 
@@ -27,14 +28,9 @@ class RoiManager:
 
     def get_roi_points(self, cam_idx: int) -> list:
         """JSON 파일에서 ROI 좌표 로드. 없으면 기본값 반환."""
-        path = self._roi_path(cam_idx)
-        try:
-            with open(path, "r") as f:
-                data = json.load(f)
-            if isinstance(data, list) and len(data) >= 3:
-                return data
-        except Exception:
-            pass
+        polygon = load_roi_polygon(self._roi_path(cam_idx))
+        if polygon is not None:
+            return polygon
         return [list(p) for p in self._DEFAULT_ROI]
 
     def set_roi_points(self, cam_idx: int, points: list) -> None:

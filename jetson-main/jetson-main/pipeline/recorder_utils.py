@@ -8,12 +8,12 @@ import os
 import shutil
 import stat
 import subprocess
-from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
 
 from config.settings import UPLOAD_ENABLED
 from pipeline.uploader import upload_video_file
 from utils.logger import get_logger, EventType
+from utils.time_utils import epoch_to_tag
 
 logger = get_logger("pipeline.recorder_utils")
 
@@ -155,7 +155,7 @@ def _create_event_folder(
     Returns:
         생성된 폴더 경로
     """
-    time_tag = datetime.fromtimestamp(timestamp).strftime("%Y%m%d_%H%M%S")
+    time_tag = epoch_to_tag(timestamp)
     gps_tag = _format_gps_tag(sensor_data)
     folder_name = f"event_{time_tag}_{gps_tag}"
     folder_path = os.path.join(save_dir, folder_name)
@@ -309,7 +309,7 @@ def _build_event_filename(
     if event_folder:
         # full_recording 폴더인 경우: 타임스탬프 포함
         if event_folder.endswith("full_recording"):
-            time_tag = datetime.fromtimestamp(event_ts).strftime("%Y%m%d_%H%M%S")
+            time_tag = epoch_to_tag(event_ts)
             filename = f"camera{cam_id}_{time_tag}.avi"
             return os.path.join(event_folder, filename)
         # 이벤트 폴더인 경우: 간단한 파일명
@@ -318,7 +318,7 @@ def _build_event_filename(
             return os.path.join(event_folder, filename)
     else:
         # 이벤트 폴더 없으면 기존 방식 (타임스탬프+GPS)
-        time_tag = datetime.fromtimestamp(event_ts).strftime("%Y%m%d_%H%M%S")
+        time_tag = epoch_to_tag(event_ts)
         gps_tag = _format_gps_tag(sensor_data)
         filename = f"camera{cam_id}_{time_tag}_{gps_tag}.avi"
         return os.path.join(save_dir, filename)

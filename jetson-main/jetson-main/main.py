@@ -202,6 +202,47 @@ def _load_roi_polygons() -> Dict[int, Any]:
     return polygons
 
 
+def _read_camera_state_snapshot(state: SharedState):
+    """한 카메라의 최신 프레임·탐지·경고 레벨을 스레드 안전하게 읽어 반환합니다."""
+    with state.frame_lock:
+        frame = state.latest_frame.copy() if state.latest_frame is not None else None
+    with state.det_lock:
+        detections = list(state.last_detections)
+        intrusion  = state.last_intrusion
+        warning_level = state.last_warning_level
+    return frame, detections, intrusion, warning_level
+
+
+def _render_camera_panel(
+    frame,
+    detections,
+    fps: float,
+    saving: bool,
+    cam_id: int,
+    state: SharedState,
+    draw_ms: float,
+    roi_polygons: Optional[Dict[int, Any]],
+) -> Tuple[cv2.Mat, float]:
+    """한 카메라 프레임에 탐지 오버레이를 그리고 (panel, draw_ms) 를 반환합니다."""
+    t0 = time.perf_counter()
+    panel = draw_detections(
+        frame,
+        detections,
+        fps,
+        saving,
+        cam_id,
+        intrusion=state.last_intrusion,
+        capture_ms=state.capture_ms,
+        inference_ms=state.inference_ms,
+        postprocess_ms=state.postprocess_ms,
+        draw_ms=draw_ms,
+        roi_polygon=roi_polygons.get(cam_id) if roi_polygons else None,
+        forklift_speed=state.forklift_speed,
+        warning_level=state.last_warning_level,
+    )
+    return panel, (time.perf_counter() - t0) * 1000
+
+
 def _build_split_frame(
     states: List[SharedState],
     fps_counters: Dict[int, "FPSCounter"],
@@ -212,17 +253,11 @@ def _build_split_frame(
     panels = []
     any_intrusion = False
     new_draw_ms: List[float] = []
-    global_saving = _determine_saving_global(states)  # 전체 카메라 기준 saving
+    global_saving = _determine_saving_global(states)
 
     for i, state in enumerate(states):
         cam_id = CAMERA_INDICES[i]
-
-        with state.frame_lock:
-            frame = state.latest_frame.copy() if state.latest_frame is not None else None
-        with state.det_lock:
-            detections = list(state.last_detections)
-            intrusion  = state.last_intrusion
-            warning_level = state.last_warning_level
+        frame, detections, intrusion, warning_level = _read_camera_state_snapshot(state)
 
         if frame is None:
             frame = np.zeros((480, 640, 3), dtype=np.uint8)
@@ -230,19 +265,11 @@ def _build_split_frame(
         any_intrusion = any_intrusion or intrusion
         fps = fps_counters[cam_id].update()
 
-        t0 = time.perf_counter()
-        panel = draw_detections(
+        panel, elapsed_ms = _render_camera_panel(
             frame, detections, fps, global_saving, cam_id,
-            intrusion=intrusion,
-            capture_ms=state.capture_ms,
-            inference_ms=state.inference_ms,
-            postprocess_ms=state.postprocess_ms,
-            draw_ms=draw_ms_list[i],
-            roi_polygon=roi_polygons.get(cam_id) if roi_polygons else None,
-            forklift_speed=state.forklift_speed,
-            warning_level=warning_level,
+            state, draw_ms_list[i], roi_polygons,
         )
-        new_draw_ms.append((time.perf_counter() - t0) * 1000)
+        new_draw_ms.append(elapsed_ms)
         panels.append(panel)
 
     return _stack_panels(panels), any_intrusion, new_draw_ms

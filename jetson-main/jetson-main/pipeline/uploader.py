@@ -153,6 +153,29 @@ def upload_video_file(file_path: str, date_str: Optional[str] = None) -> bool:
 # JSON 이벤트 로그 전송 (yolo_test-main send_to_ec2_server 이식)
 # ──────────────────────────────────────────────
 
+def _is_within_cooldown(cam_id: int) -> bool:
+    """카메라별 쿨다운 내에 이미 전송했으면 True를 반환합니다."""
+    return time.time() - _last_event_log_ts.get(cam_id, 0.0) < EVENT_LOG_COOLDOWN_SEC
+
+
+def _record_event_log_timestamp(cam_id: int) -> None:
+    """이벤트 로그 전송 시각을 카메라 쿨다운 기록에 저장합니다."""
+    _last_event_log_ts[cam_id] = time.time()
+
+
+def _dispatch_event_log(event_type: str, cam_id: int, speed_level: int, blocking: bool) -> None:
+    """blocking 여부에 따라 이벤트 로그를 동기 또는 백그라운드 스레드로 전송합니다."""
+    if blocking:
+        _send_event_log(event_type, cam_id, speed_level)
+    else:
+        threading.Thread(
+            target=_send_event_log,
+            args=(event_type, cam_id, speed_level),
+            daemon=True,
+            name=f"event_log_{cam_id}",
+        ).start()
+
+
 def upload_event_log(
     event_type: str,
     cam_id: int,
@@ -176,22 +199,10 @@ def upload_event_log(
     """
     if not EVENT_LOG_ENABLED:
         return
-
-    # 쿨다운 체크 (모듈 수준 dict — 스레드 간 충돌 가능성 낮아 Lock 생략)
-    now = time.time()
-    if now - _last_event_log_ts.get(cam_id, 0.0) < EVENT_LOG_COOLDOWN_SEC:
+    if _is_within_cooldown(cam_id):
         return
-    _last_event_log_ts[cam_id] = now
-
-    if blocking:
-        _send_event_log(event_type, cam_id, speed_level)
-    else:
-        threading.Thread(
-            target=_send_event_log,
-            args=(event_type, cam_id, speed_level),
-            daemon=True,
-            name=f"event_log_{cam_id}",
-        ).start()
+    _record_event_log_timestamp(cam_id)
+    _dispatch_event_log(event_type, cam_id, speed_level, blocking)
 
 
 def _send_event_log(event_type: str, cam_id: int, speed_level: int) -> None:
@@ -235,6 +246,11 @@ def _send_event_log(event_type: str, cam_id: int, speed_level: int) -> None:
 # 이벤트 큐 워커
 # ──────────────────────────────────────────────
 
+def _process_event_queue_item(event_type: str, cam_id: int, speed_level: int) -> None:
+    """큐에서 꺼낸 이벤트 한 건을 파싱하여 upload_event_log를 호출합니다."""
+    upload_event_log(event_type=event_type, cam_id=cam_id, speed_level=speed_level)
+
+
 def start_event_upload_worker(
     event_queues: list,
     stop_event: threading.Event,
@@ -255,11 +271,7 @@ def start_event_upload_worker(
             for eq in event_queues:
                 try:
                     event_type, cam_id, speed_level = eq.get_nowait()
-                    upload_event_log(
-                        event_type=event_type,
-                        cam_id=cam_id,
-                        speed_level=speed_level,
-                    )
+                    _process_event_queue_item(event_type, cam_id, speed_level)
                 except _queue.Empty:
                     pass
                 except Exception as e:

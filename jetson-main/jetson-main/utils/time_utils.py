@@ -11,6 +11,11 @@ def get_timestamp() -> str:
     return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
+def epoch_to_tag(ts: float) -> str:
+    """Unix 타임스탬프(float)를 파일명용 태그 문자열로 변환"""
+    return datetime.fromtimestamp(ts).strftime("%Y%m%d_%H%M%S")
+
+
 def get_formatted_time() -> str:
     """포맷된 현재 시간 반환"""
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")

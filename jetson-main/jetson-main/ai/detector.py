@@ -105,6 +105,10 @@ def load_roi_polygon(config_path: str) -> Optional[List[List[int]]]:
     """
     roi_config_cam{N}.json 파일을 읽어 폴리곤 좌표를 반환.
 
+    두 가지 저장 형식을 모두 지원합니다:
+    - dict 형식: {"roi_polygon": [[x,y], ...]}  (roi_setup.py 보정 도구 저장)
+    - list 형식: [[x,y], ...]                  (roi_manager.py 저장)
+
     Args:
         config_path: roi_config_cam{N}.json 파일 절대 경로
 
@@ -118,7 +122,12 @@ def load_roi_polygon(config_path: str) -> Optional[List[List[int]]]:
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        polygon = data.get("roi_polygon")
+        if isinstance(data, dict):
+            polygon = data.get("roi_polygon")
+        elif isinstance(data, list):
+            polygon = data
+        else:
+            return None
         if polygon and len(polygon) >= 3:
             return polygon
     except Exception:

@@ -23,6 +23,35 @@ from pipeline.recorder_utils import (
 
 logger = get_logger("pipeline.recorder")
 
+
+def _write_fps_compensated(
+    writer: cv2.VideoWriter,
+    cam_id: int,
+    timestamp: float,
+    frame,
+    fps_map: dict,
+    pending_frames: dict,
+    frame_oweds: dict,
+) -> None:
+    """타임스탬프 기반 누산기 방식으로 프레임을 writer에 씁니다.
+    이전 프레임과의 시간 간격을 계산해 repeat 횟수를 결정하고,
+    소수 오차는 frame_oweds 에 누산해 다음 호출로 이월합니다.
+    """
+    fps = fps_map.get(cam_id, 30.0) or 30.0
+    target_dt = 1.0 / fps
+    max_gap = target_dt * 4  # 최대 4프레임 공백까지 허용 (이상치 클리핑)
+    prev = pending_frames.get(cam_id)
+    if prev is not None:
+        prev_ts, prev_frame = prev
+        gap = min(timestamp - prev_ts, max_gap)
+        frame_oweds[cam_id] = frame_oweds.get(cam_id, 0.0) + gap / target_dt
+        repeat = int(frame_oweds[cam_id])
+        frame_oweds[cam_id] -= repeat
+        for _ in range(repeat):
+            writer.write(prev_frame)
+    pending_frames[cam_id] = (timestamp, frame)
+
+
 def start_save_thread(
     save_queue: queue.Queue,
     save_stop_event: threading.Event,
@@ -183,19 +212,7 @@ def save_loop(
                     writers[cam_id], writer_paths[cam_id] = result
                 
                 # 타임스탬프 기반 반복 write (누산기 방식 - 오차 이월로 버벅임/느림 방지)
-                fps = fps_map.get(cam_id, 30.0) or 30.0
-                target_dt = 1.0 / fps
-                max_gap = target_dt * 4  # 최대 4프레임 공백까지 허용 (이상치 클리핑)
-                prev = pending_frames.get(cam_id)
-                if prev is not None:
-                    prev_ts, prev_frame = prev
-                    gap = min(timestamp - prev_ts, max_gap)
-                    frame_oweds[cam_id] = frame_oweds.get(cam_id, 0.0) + gap / target_dt
-                    repeat = int(frame_oweds[cam_id])
-                    frame_oweds[cam_id] -= repeat
-                    for _ in range(repeat):
-                        writers[cam_id].write(prev_frame)
-                pending_frames[cam_id] = (timestamp, frame)
+                _write_fps_compensated(writers[cam_id], cam_id, timestamp, frame, fps_map, pending_frames, frame_oweds)
                 continue
 
             buffer = buffers.setdefault(cam_id, deque())
@@ -315,19 +332,7 @@ def save_loop(
 
                 writer = writers.get(cam_id)
                 if writer:
-                    fps = fps_map.get(cam_id, 30.0) or 30.0
-                    target_dt = 1.0 / fps
-                    max_gap = target_dt * 4  # 최대 4프레임 공백까지 허용 (이상치 클리핑)
-                    prev = pending_frames.get(cam_id)
-                    if prev is not None:
-                        prev_ts, prev_frame = prev
-                        gap = min(timestamp - prev_ts, max_gap)
-                        frame_oweds[cam_id] = frame_oweds.get(cam_id, 0.0) + gap / target_dt
-                        repeat = int(frame_oweds[cam_id])
-                        frame_oweds[cam_id] -= repeat
-                        for _ in range(repeat):
-                            writer.write(prev_frame)
-                    pending_frames[cam_id] = (timestamp, frame)
+                    _write_fps_compensated(writer, cam_id, timestamp, frame, fps_map, pending_frames, frame_oweds)
                     logger.debug(
                         "이벤트 프레임 저장",
                         {"camera": cam_id, "timestamp": timestamp}
@@ -357,19 +362,7 @@ def save_loop(
                 if deadline is not None and time.time() <= deadline:
                     writer = writers.get(cam_id)
                     if writer:
-                        fps = fps_map.get(cam_id, 30.0) or 30.0
-                        target_dt = 1.0 / fps
-                        max_gap = target_dt * 4  # 최대 4프레임 공백까지 허용 (이상치 클리핑)
-                        prev = pending_frames.get(cam_id)
-                        if prev is not None:
-                            prev_ts, prev_frame = prev
-                            gap = min(timestamp - prev_ts, max_gap)
-                            frame_oweds[cam_id] = frame_oweds.get(cam_id, 0.0) + gap / target_dt
-                            repeat = int(frame_oweds[cam_id])
-                            frame_oweds[cam_id] -= repeat
-                            for _ in range(repeat):
-                                writer.write(prev_frame)
-                        pending_frames[cam_id] = (timestamp, frame)
+                        _write_fps_compensated(writer, cam_id, timestamp, frame, fps_map, pending_frames, frame_oweds)
                 else:
                     # 녹화 종료 전 pending 프레임 마지막 1회 flush
                     writer = writers.get(cam_id)

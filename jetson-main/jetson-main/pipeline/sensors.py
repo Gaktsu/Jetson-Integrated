@@ -25,27 +25,22 @@ def start_sensor_threads(
     """GPS/IMU 폴링 스레드 시작. 하드웨어 없으면 해당 스레드 생략"""
     threads = []
 
-    def gps_loop():
-        while not stop_event.is_set():
-            data = gps.read_data()
-            if data is not None:
-                gps_buffer.add(time.time(), data)
-            time.sleep(1.0)
-
-    def imu_loop():
-        while not stop_event.is_set():
-            data = imu.read_data()
-            if data is not None:
-                imu_buffer.add(time.time(), data)
-            time.sleep(1.0)
+    def _make_sensor_loop(sensor, buffer):
+        def loop():
+            while not stop_event.is_set():
+                data = sensor.read_data()
+                if data is not None:
+                    buffer.add(time.time(), data)
+                time.sleep(1.0)
+        return loop
 
     if gps.start():
-        t = threading.Thread(target=gps_loop, daemon=True, name="gps_worker")
+        t = threading.Thread(target=_make_sensor_loop(gps, gps_buffer), daemon=True, name="gps_worker")
         t.start()
         threads.append(t)
         logger.debug("GPS 스레드 시작")
     if imu.start():
-        t = threading.Thread(target=imu_loop, daemon=True, name="imu_worker")
+        t = threading.Thread(target=_make_sensor_loop(imu, imu_buffer), daemon=True, name="imu_worker")
         t.start()
         threads.append(t)
         logger.debug("IMU 스레드 시작")

@@ -61,43 +61,65 @@ def start_capture_threads(
     return threads
 
 
+def _read_frame_with_timing(cap) -> tuple:
+    """캡처 장치에서 프레임을 읽고 소요 시간(ms)을 함께 반환합니다."""
+    t0 = time.perf_counter()
+    ok, frame = cap.read_frame()
+    elapsed_ms = (time.perf_counter() - t0) * 1000
+    return ok, frame, elapsed_ms
+
+
+def _update_shared_state(state: SharedState, frame, timestamp: float, elapsed_ms: float) -> None:
+    """캡처된 프레임과 타이밍 정보를 SharedState에 기록합니다."""
+    state.capture_ms = elapsed_ms
+    with state.frame_lock:
+        state.latest_frame = frame
+        state.latest_frame_seq += 1
+        state.latest_frame_ts = timestamp
+
+
+def _enqueue_frame_for_inference(state: SharedState, timestamp: float, frame) -> None:
+    """추론 스레드용 프레임 큐에 프레임을 넣습니다."""
+    _put_dropping_oldest(state.frame_queue, (state.latest_frame_seq, timestamp, frame))
+
+
+def _enqueue_frame_for_saving(
+    save_queue: Optional[queue.Queue],
+    cam_id: int,
+    timestamp: float,
+    frame,
+    seq: int,
+) -> None:
+    """저장 스레드용 큐에 raw 프레임을 넣습니다."""
+    if save_queue is not None:
+        _put_dropping_oldest(save_queue, (cam_id, timestamp, frame, seq))
+
+
+def _log_capture_progress(frame_count: int) -> None:
+    """100프레임마다 캡처 진행 상황을 디버그 로그로 출력합니다."""
+    if frame_count % 100 == 0:
+        logger.debug("프레임 캡처 진행", {"frame_count": frame_count})
+
+
 def capture_loop(cap, state: SharedState, cam_id: int, save_queue: Optional[queue.Queue] = None) -> None:
     """캡처 스레드"""
-    logger.event_info(
-        EventType.MODULE_START,
-        "캡처 루프 시작"
-    )
-    
+    logger.event_info(EventType.MODULE_START, "캡처 루프 시작")
+
     frame_count = 0
     while not state.stop_event.is_set():
-        t0 = time.perf_counter()
-        ok, frame = cap.read_frame()
-        capture_elapsed = (time.perf_counter() - t0) * 1000  # ms
+        ok, frame, elapsed_ms = _read_frame_with_timing(cap)
         if not ok:
             time.sleep(0.001)
             continue
 
-        # capture_ms: 이번 프레임의 측정값으로 갱신 (Lock 없이 float 단순 할당)
-        state.capture_ms = capture_elapsed
-
         timestamp = time.time()
+        _update_shared_state(state, frame, timestamp, elapsed_ms)
+        frame_count += 1
 
-        with state.frame_lock:
-            state.latest_frame = frame
-            state.latest_frame_seq += 1
-            state.latest_frame_ts = timestamp
-            frame_count += 1
+        _enqueue_frame_for_inference(state, timestamp, frame)
+        _enqueue_frame_for_saving(save_queue, cam_id, timestamp, frame, state.latest_frame_seq)
+        _log_capture_progress(frame_count)
 
-        _put_dropping_oldest(state.frame_queue, (state.latest_frame_seq, timestamp, frame))
-
-        # 저장 스레드에 raw frame 직접 전달 (추론 스레드와 독립)
-        if save_queue is not None:
-            _put_dropping_oldest(save_queue, (cam_id, timestamp, frame, state.latest_frame_seq))
-
-        # 100 프레임마다 디버그 로깅
-        if frame_count % 100 == 0:
-            logger.debug("프레임 캡처 진행", {"frame_count": frame_count})
-    
     logger.event_info(
         EventType.MODULE_STOP,
         "캡처 루프 종료",
