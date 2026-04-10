@@ -6,6 +6,8 @@ from PyQt5.QtWidgets import QWidget, QLabel, QPushButton
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QImage, QPixmap
 from config.settings import CAMERA_INDICES, PROJECT_ROOT
+from ui.renderer import draw_detections
+from ai.detector import load_roi_polygon
 
 
 class _PipelineAiProxy:
@@ -145,15 +147,36 @@ class LiveScreen(QWidget):
         # 이번 턴에 모니터에 출력할 4개의 화면 데이터를 담을 빈 리스트
         frames = [None] * 4
 
-        # SharedState에서 최신 프레임을 읽어옴 (AI/녹화는 pipeline이 처리)
+        # SharedState에서 최신 프레임 + 탐지 결과를 읽어 오버레이 적용
         if self.shared_states is not None:
             for i, state in enumerate(self.shared_states):
                 if i >= 4:
                     break
                 with state.frame_lock:
-                    if state.latest_frame is not None:
-                        frames[i] = state.latest_frame.copy()
-                        self.current_raw_frames[i] = frames[i]
+                    if state.latest_frame is None:
+                        continue
+                    raw = state.latest_frame.copy()
+
+                self.current_raw_frames[i] = raw
+
+                with state.det_lock:
+                    detections     = list(state.last_detections)
+                    intrusion      = state.last_intrusion
+                    warning_level  = state.last_warning_level
+
+                cam_id = CAMERA_INDICES[i] if i < len(CAMERA_INDICES) else i
+                roi_path = os.path.join(PROJECT_ROOT, "config", f"roi_config_cam{cam_id}.json")
+                roi_polygon = load_roi_polygon(roi_path)
+
+                frames[i] = draw_detections(
+                    raw,
+                    detections,
+                    roi_polygon=roi_polygon,
+                    intrusion=intrusion,
+                    warning_level=warning_level,
+                    camera_index=cam_id,
+                    forklift_speed=state.forklift_speed,
+                )
 
         # 사용자가 화면 하나를 터치해서 확대모드일 경우
         if self.expanded_pos_index is not None:

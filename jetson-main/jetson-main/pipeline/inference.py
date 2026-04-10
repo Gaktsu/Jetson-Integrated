@@ -74,6 +74,10 @@ def _single_cam_inference_loop(
 
     logger.event_info(EventType.MODULE_START, "추론 루프 시작", {"cam": cam_id})
 
+    # 이벤트 로그 쿨다운: 같은 카메라에서 N초 이내 중복 기록 방지
+    _LOG_COOLDOWN_SEC = 10.0
+    _last_log_time: float = 0.0
+
     # ROI 폴리곤 로드 (파일 없으면 매 프레임 재시도)
     roi_path = os.path.join(PROJECT_ROOT, "config", f"roi_config_cam{cam_id}.json")
     roi_polygon: Optional[Any] = load_roi_polygon(roi_path)
@@ -194,8 +198,10 @@ def _single_cam_inference_loop(
             if intrusion:
                 state.last_intrusion_ts = timestamp
 
-        # ROI 내 객체가 있을 때만 이벤트 로그 기록
-        if intrusion and roi_count > 0 and warning_level != prev_warning:
+        # ROI 내 객체가 있을 때만 이벤트 로그 기록 (쿨다운 적용)
+        now_t = time.perf_counter()
+        if intrusion and roi_count > 0 and (now_t - _last_log_time) >= _LOG_COOLDOWN_SEC:
+            _last_log_time = now_t
             logger.event_info(
                 EventType.DETECTION_RESULT,
                 "위험 영역 내 객체 탐지",
