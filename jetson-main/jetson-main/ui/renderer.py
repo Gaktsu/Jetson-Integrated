@@ -84,6 +84,7 @@ def draw_detections(
     roi_polygon: Optional[Sequence[Sequence[int]]] = None,
     warning_level: Optional[WarningLevel] = None,
     forklift_speed: int = 0,
+    show_status_bar: bool = True,
 ) -> cv2.Mat:
     """
     탐지 결과를 프레임에 그리기 (yolo_test-main UI 스타일 적용).
@@ -144,29 +145,36 @@ def draw_detections(
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
 
     # ── 상단 상태바 (yolo_test-main 스타일) ──
-    BAR_H = 55
-    cv2.rectangle(frame, (0, 0), (w, BAR_H), (0, 0, 0), -1)
+    if show_status_bar:
+        BAR_H = 55
+        cv2.rectangle(frame, (0, 0), (w, BAR_H), (0, 0, 0), -1)
 
-    # 알람 메시지 (좌측)
-    cv2.putText(frame, alarm_msg, (12, 36),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.75, screen_color, 2, cv2.LINE_AA)
+        # 알람 메시지 (좌측)
+        cv2.putText(frame, alarm_msg, (12, 36),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, screen_color, 2, cv2.LINE_AA)
 
-    # 속도 레벨 (우측)
-    speed_text = f"Speed: {forklift_speed}/5"
-    spd_size = cv2.getTextSize(speed_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
-    cv2.putText(frame, speed_text, (w - spd_size[0] - 12, 36),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)
+        # 속도 레벨 (우측)
+        speed_text = f"Speed: {forklift_speed}/5"
+        spd_size = cv2.getTextSize(speed_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
+        cv2.putText(frame, speed_text, (w - spd_size[0] - 12, 36),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)
 
-    # Saving... (속도 레벨 아래)
-    # ── 카메라 번호 (상태바 바로 아래 우상단) ──
-    cam_text = f"CAM {camera_index}"
-    cam_sz = cv2.getTextSize(cam_text, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)[0]
-    cv2.putText(frame, cam_text, (w - cam_sz[0] - 10, BAR_H + 22),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (200, 200, 200), 1, cv2.LINE_AA)
+        # Saving... (속도 레벨 아래)
+        # ── 카메라 번호 (상태바 바로 아래 우상단) ──
+        cam_text = f"CAM {camera_index}"
+        cam_sz = cv2.getTextSize(cam_text, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)[0]
+        cv2.putText(frame, cam_text, (w - cam_sz[0] - 10, BAR_H + 22),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (200, 200, 200), 1, cv2.LINE_AA)
 
-    if saving:
-        sav_size = cv2.getTextSize("Saving...", cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)[0]
-        cv2.putText(frame, "Saving...", (w - sav_size[0] - 12, BAR_H + 44),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 255), 2, cv2.LINE_AA)
+        if saving:
+            sav_size = cv2.getTextSize("Saving...", cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)[0]
+            cv2.putText(frame, "Saving...", (w - sav_size[0] - 12, BAR_H + 44),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 255), 2, cv2.LINE_AA)
+    else:
+        # 상태바 숨김 시 카메라 번호만 우상단에 표시
+        cam_text = f"CAM {camera_index}"
+        cam_sz = cv2.getTextSize(cam_text, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)[0]
+        cv2.putText(frame, cam_text, (w - cam_sz[0] - 6, 18),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1, cv2.LINE_AA)
 
     return frame

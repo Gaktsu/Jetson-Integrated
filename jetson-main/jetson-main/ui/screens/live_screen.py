@@ -72,19 +72,28 @@ class LiveScreen(QWidget):
         # pipeline 모드에서는 JSON 기반 프록시를 사용
         self.ai = _PipelineAiProxy()
 
-        # 4개의 카메라 영상을 보여줄 UI 라벨(영역)을 생성
+        # 상단 상태바 (800x50) — 경고 레벨 / 속도 표시
+        self.alert_bar = QLabel("SAFE / NORMAL DRIVING", self)
+        self.alert_bar.setGeometry(0, 0, 800, 50)
+        self.alert_bar.setAlignment(Qt.AlignCenter)
+        self.alert_bar.setStyleSheet(
+            "background-color: #003300; color: #00ff00; "
+            "font-size: 18px; font-weight: bold;"
+        )
+
+        # 4개의 카메라 영상을 보여줄 UI 라벨(영역)을 생성 — y=50부터 시작
         self.cam_labels = []
-        positions = [(0, 0), (400, 0), (0, 240), (400, 240)] # 4분할 화면의 각 (x, y) 시작 좌표
+        positions = [(0, 50), (400, 50), (0, 265), (400, 265)]
         for i in range(4):
             lbl = QLabel(f"CAM {i+1}\nNO SIGNAL", self)
             lbl.setAlignment(Qt.AlignCenter)
             lbl.setStyleSheet("background-color: #111; color: red; font-size: 20px; font-weight: bold; border: 1px solid #333;")
-            lbl.setGeometry(positions[i][0], positions[i][1], 400, 240) # 가로 400, 세로 240 크기로 배치
+            lbl.setGeometry(positions[i][0], positions[i][1], 400, 215)
             self.cam_labels.append(lbl)
 
         # 화면 중 하나를 터치했을 때 꽉 찬 전체 화면으로 띄워줄 라벨
         self.full_screen_label = QLabel(self)
-        self.full_screen_label.setGeometry(0, 0, 800, 480)
+        self.full_screen_label.setGeometry(0, 50, 800, 430)
         self.full_screen_label.setStyleSheet("background-color: black;")
         self.full_screen_label.setAlignment(Qt.AlignCenter)
         self.full_screen_label.hide()
@@ -124,6 +133,7 @@ class LiveScreen(QWidget):
         self.set_btn.clicked.connect(lambda: self.main_window.switch_screen(6))
 
         # 화면에 그려지는 순서정리
+        self.alert_bar.raise_()
         self.full_screen_label.lower()
         self.back_btn.raise_()
         self.set_btn.raise_()
@@ -176,7 +186,11 @@ class LiveScreen(QWidget):
                     warning_level=warning_level,
                     camera_index=cam_id,
                     forklift_speed=state.forklift_speed,
+                    show_status_bar=False,
                 )
+
+            # 상단 상태바: 모든 카메라 중 가장 높은 경고 레벨을 표시
+            self._update_alert_bar()
 
         # 사용자가 화면 하나를 터치해서 확대모드일 경우
         if self.expanded_pos_index is not None:
@@ -186,8 +200,8 @@ class LiveScreen(QWidget):
             
             if frame is not None:
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                # 800x480 전체 화면 크기에 꽉 차도록 이미지 크기 조절
-                frame_resized = cv2.resize(frame_rgb, (800, 480))
+                # 800x430 (상태바 아래 카메라 영역) 크기에 맞게 조절
+                frame_resized = cv2.resize(frame_rgb, (800, 430))
                 h, w, c = frame_resized.shape
                 q_img = QImage(frame_resized.data, w, h, 3 * w, QImage.Format_RGB888)
                 self.full_screen_label.setPixmap(QPixmap.fromImage(q_img))
@@ -202,20 +216,22 @@ class LiveScreen(QWidget):
                 
                 if frame is not None:
                     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    # 400x240 분할 화면 크기에 맞게 이미지 축소
-                    frame_resized = cv2.resize(frame_rgb, (400, 240))
+                    # 400x215 분할 화면 크기에 맞게 축소
+                    frame_resized = cv2.resize(frame_rgb, (400, 215))
                     h, w, c = frame_resized.shape
                     q_img = QImage(frame_resized.data, w, h, 3 * w, QImage.Format_RGB888)
                     self.cam_labels[pos].setPixmap(QPixmap.fromImage(q_img))
                 else:
-                    # 연결된 카메라가 없을 때는 기존 화면을 지우고 NO SIGNAL 텍스트를 출력
-                    self.cam_labels[pos].clear()
-                    self.cam_labels[pos].setText(f"CAM {cam_idx+1}\nNO SIGNAL")
-    
-    # 사용자가 모니터 화면을 터치(또는 마우스 클릭)했을 때 실행되는 이벤트 함수
+                    pass
+
     def mousePressEvent(self, event):
-        x, y = event.x(), event.y()
-        
+        x = event.x()
+        y = event.y()
+
+        # 상단 상태바 영역(y<50)은 터치 무시
+        if y < 50:
+            return super().mousePressEvent(event)
+
         # 터치한 좌표가 좌/우측 하단의 버튼 위치라면 확대 기능을 작동하지 않고 넘김
         if (x < 80 and y > 400) or (x > 720 and y > 400):
             return super().mousePressEvent(event)
@@ -226,15 +242,48 @@ class LiveScreen(QWidget):
             self.full_screen_label.hide()
         else:
             # 4분할 화면일 때, 화면을 4등분하여 어느 위치를 터치했는지 판별
-            if x < 400 and y < 240: pos = 0     # 좌상단 영역
-            elif x >= 400 and y < 240: pos = 1  # 우상단 영역
-            elif x < 400 and y >= 240: pos = 2  # 좌하단 영역
+            # 상단 행 y=50~265, 하단 행 y=265~480
+            if x < 400 and y < 265: pos = 0     # 좌상단 영역
+            elif x >= 400 and y < 265: pos = 1  # 우상단 영역
+            elif x < 400 and y >= 265: pos = 2  # 좌하단 영역
             else: pos = 3                       # 우하단 영역
-            
+
             cam_idx = self.cam_mapping[pos]
             # 최신 프레임이 있을 때만 확대 모드 작동
             if self.current_raw_frames[cam_idx] is not None:
                 self.expanded_pos_index = pos
+
+    def _update_alert_bar(self):
+        """모든 SharedState의 경고 레벨 중 최고값을 상단 상태바에 반영."""
+        if self.shared_states is None:
+            return
+        max_level_val = 0
+        max_speed = 0
+        for state in self.shared_states:
+            with state.det_lock:
+                wl = state.last_warning_level
+                spd = getattr(state, 'forklift_speed', 0) or 0
+            level_val = getattr(wl, 'value', 0) if wl is not None else 0
+            if level_val > max_level_val:
+                max_level_val = level_val
+            if spd > max_speed:
+                max_speed = spd
+
+        if max_level_val == 0:
+            color, bg = "#00ff00", "#003300"
+            msg = f"SAFE  |  Speed: {max_speed}/5"
+        elif max_level_val == 1:
+            color, bg = "#ffff00", "#333300"
+            msg = f"WARNING  |  Speed: {max_speed}/5"
+        else:
+            color, bg = "#ff4444", "#330000"
+            msg = f"DANGER  |  Speed: {max_speed}/5"
+
+        self.alert_bar.setText(msg)
+        self.alert_bar.setStyleSheet(
+            f"background-color: {bg}; color: {color}; "
+            "font-size: 18px; font-weight: bold;"
+        )
 
     # 프로그램 창이 닫힐 때 — 카메라/녹화/AI 정리는 pipeline(main.py)이 담당
     def closeEvent(self, event):
