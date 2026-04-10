@@ -1,5 +1,8 @@
+import json
+import os
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QScrollArea
 from PyQt5.QtCore import Qt
+from config.settings import PROJECT_ROOT
 
 class EventScreen(QWidget):
     def __init__(self, main_window):
@@ -47,18 +50,75 @@ class EventScreen(QWidget):
         # 화면이 처음 만들어질 때, 기록된 이벤트 내역을 불러와서 화면에 채워 넣음
         self.load_events()
 
+    def showEvent(self, event):
+        """화면이 표시될 때마다 로그를 새로 불러옴"""
+        self.load_events()
+        super().showEvent(event)
+
     # 기록된 이벤트(위험 감지 로그 등)를 불러와서 화면에 하나씩 그려주는 함수
     def load_events(self):
-        # 현재는 화면이 어떻게 보이는지 테스트하기 위해 임시 데이터를 넣었음
-        events = [
-            "2026-04-03 15:30:22 - 충격 감지 (CAM 1)", 
-            "2026-04-03 14:15:00 - 접근 경고 (CAM 3)", 
-            "2026-04-03 08:00:15 - 시스템 시작"
-        ]
-        
-        # 리스트에 있는 이벤트를 하나씩 꺼내서 텍스트 상자(QLabel)로 만듬
-        for evt in events:
-            lbl = QLabel(evt)
-            lbl.setStyleSheet("color: white; font-size: 18px; padding: 15px; background-color: #222; border-radius: 8px; border: 1px solid #444;")
-            # 레이아웃에 추가
+        # 기존 항목 모두 제거
+        while self.list_layout.count():
+            item = self.list_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        entries = self._read_log_entries()
+
+        if not entries:
+            lbl = QLabel("기록된 이벤트가 없습니다.")
+            lbl.setStyleSheet("color: #888; font-size: 18px; padding: 15px; background-color: #222; border-radius: 8px; border: 1px solid #444;")
+            lbl.setAlignment(Qt.AlignCenter)
             self.list_layout.addWidget(lbl)
+            return
+
+        # 최신 항목이 위에 오도록 역순으로 표시 (최대 100개)
+        for text, level in reversed(entries[-100:]):
+            lbl = QLabel(text)
+            if level == "ERROR":
+                style = "color: #ff6666;"
+            elif level == "WARNING":
+                style = "color: #ffcc00;"
+            else:
+                style = "color: white;"
+            lbl.setStyleSheet(
+                f"{style} font-size: 16px; padding: 12px; "
+                "background-color: #222; border-radius: 8px; border: 1px solid #444;"
+            )
+            lbl.setWordWrap(True)
+            self.list_layout.addWidget(lbl)
+
+    def _read_log_entries(self):
+        """logs/event_project.log 에서 이벤트 항목 파싱. [(표시 텍스트, 레벨), ...] 반환"""
+        log_path = os.path.join(PROJECT_ROOT, "logs", "event_project.log")
+        if not os.path.exists(log_path):
+            return []
+
+        entries = []
+        try:
+            with open(log_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    # 형식: "2026-04-10 18:51:56 - LEVEL - {json}"
+                    parts = line.split(" - ", 2)
+                    if len(parts) < 3:
+                        continue
+                    timestamp_str, level, raw = parts[0], parts[1], parts[2]
+                    try:
+                        data = json.loads(raw)
+                        event = data.get("event", "")
+                        message = data.get("message", "")
+                        module = data.get("module", "")
+                        cam_data = data.get("data", {})
+                        cam_info = ""
+                        if isinstance(cam_data, dict) and "camera_index" in cam_data:
+                            cam_info = f" (CAM {cam_data['camera_index']})"
+                        text = f"{timestamp_str}  [{event}]  {message}{cam_info}"
+                    except (json.JSONDecodeError, KeyError):
+                        text = f"{timestamp_str}  {raw[:80]}"
+                    entries.append((text, level))
+        except Exception:
+            pass
+        return entries
