@@ -229,3 +229,48 @@ def _send_event_log(event_type: str, cam_id: int, speed_level: int) -> None:
             "이벤트 로그 전송 실패 (서버 미연결 시 정상)",
             {"event_type": event_type, "cam_id": cam_id, "error": str(e)},
         )
+
+
+# ──────────────────────────────────────────────
+# 이벤트 큐 워커
+# ──────────────────────────────────────────────
+
+def start_event_upload_worker(
+    event_queues: list,
+    stop_event: threading.Event,
+) -> threading.Thread:
+    """
+    SharedState.event_queue 들을 구독해 upload_event_log 를 호출하는 워커 스레드.
+
+    inference.py 는 큐에 (event_type, cam_id, speed_level) 튜플만 넣고,
+    실제 업로드 책임은 이 워커가 전담한다.
+
+    Args:
+        event_queues:  SharedState 리스트의 event_queue 목록
+        stop_event:    종료 신호 Event
+    """
+    def _worker():
+        import queue as _queue
+        while not stop_event.is_set():
+            for eq in event_queues:
+                try:
+                    event_type, cam_id, speed_level = eq.get_nowait()
+                    upload_event_log(
+                        event_type=event_type,
+                        cam_id=cam_id,
+                        speed_level=speed_level,
+                    )
+                except _queue.Empty:
+                    pass
+                except Exception as e:
+                    logger.event_error(
+                        EventType.ERROR_OCCURRED,
+                        "이벤트 큐 워커 오류",
+                        {"error": str(e)},
+                    )
+            time.sleep(0.1)
+
+    t = threading.Thread(target=_worker, daemon=True, name="event_upload_worker")
+    t.start()
+    logger.debug("이벤트 업로드 워커 스레드 시작")
+    return t

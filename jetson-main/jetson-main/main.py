@@ -30,6 +30,7 @@ from pipeline.shared_state import SharedState
 from pipeline.capture import start_capture_threads
 from pipeline.inference import start_inference_thread
 from pipeline.recorder import start_save_thread
+from pipeline.uploader import start_event_upload_worker
 from pipeline.sensors import start_sensor_threads
 from ui.renderer import draw_detections
 from ai.detector import load_roi_polygon
@@ -362,6 +363,7 @@ def main():
         + start_inference_thread(models, states, get_sensor_snapshot, inference_stop_event)
         + start_sensor_threads(gps, imu, sensor_stop_event, gps_buffer, imu_buffer)
         + [start_save_thread(save_queue, save_stop_event, fps_map, get_sensor_snapshot, state_map)]
+        + [start_event_upload_worker([s.event_queue for s in states], inference_stop_event)]
     )
     logger.event_info(EventType.MODULE_START, f"{len(cameras)}개 카메라 스레드 시작 완료")
 

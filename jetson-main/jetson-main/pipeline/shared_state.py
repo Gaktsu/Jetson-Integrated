@@ -60,5 +60,10 @@ class SharedState:
         self.inference_ms: float = 0.0    # model.run_inference() 소요 시간
         self.postprocess_ms: float = 0.0  # model.postprocess_results() 소요 시간
 
+        # ── 이벤트 업로드 큐 ──
+        # inference 스레드가 (event_type, cam_id, speed_level) 튜플을 넣으면
+        # uploader 워커 스레드가 꺼내서 서버로 전송 (추론 루프와 업로드 책임 분리)
+        self.event_queue: queue.Queue = queue.Queue(maxsize=64)
+
         logger.debug("SharedState 객체 생성 완료")
 

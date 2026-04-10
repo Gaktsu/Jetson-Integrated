@@ -17,7 +17,6 @@ from ai.detector import (
 )
 from ai.model import YOLOInference
 from pipeline.shared_state import SharedState
-from pipeline.uploader import upload_event_log
 
 logger = get_logger("pipeline.inference")
 
@@ -207,11 +206,15 @@ def _single_cam_inference_loop(
                 "위험 영역 내 객체 탐지",
                 {"cam": cam_id, "roi_count": roi_count, "warning": warning_level.value},
             )
-            upload_event_log(
-                event_type=warning_level.value,
-                cam_id=cam_id,
-                speed_level=state.forklift_speed,
-            )
+            # 업로드 책임은 uploader 워커 스레드가 담당 — 큐에 이벤트만 전달
+            try:
+                state.event_queue.put_nowait((
+                    warning_level.value,
+                    cam_id,
+                    state.forklift_speed,
+                ))
+            except Exception:
+                pass  # 큐가 가득 찬 경우 무시
 
         # smoothing + 히스토리
         smoothed = _smooth_detections(state.smoothed_detections, detections)
