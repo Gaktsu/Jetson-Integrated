@@ -91,12 +91,7 @@ class EventScreen(QWidget):
     # UI 이벤트 화면에 표시할 이벤트 타입 목록
     # 여기에 없는 타입은 디버그용으로만 남고 화면에 표시되지 않음
     _DISPLAY_EVENTS = {
-        "SYSTEM_START",
-        "SYSTEM_STOP",
         "DETECTION_RESULT",
-        "ERROR_OCCURRED",
-        "USER_INPUT",
-        "CAMERA_ERROR",
     }
 
     def _read_log_entries(self):
