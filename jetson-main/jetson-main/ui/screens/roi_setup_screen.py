@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QMessageBox
-from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen, QColor
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QImage, QPixmap
 
 class RoiSetupScreen(QWidget):
     def __init__(self, main_window):
@@ -95,6 +95,7 @@ class RoiSetupScreen(QWidget):
         self.update_display()
 
     # 배경 사진 위에 점, 선, 면을 실시간으로 덧그려주는 그래픽 핵심 함수
+    # QPainter 대신 OpenCV로만 그려서 재진입(reentrant) 세그폴트 방지
     def update_display(self):
         if self.base_frame is None:
             return
@@ -102,57 +103,48 @@ class RoiSetupScreen(QWidget):
         img = self.base_frame.copy()
         h, w = img.shape[:2]
 
-        # BGR → RGB 변환 후 QImage 생성
-        # img_rgb를 self에 보관해 GC로 인한 세그폴트 방지
-        self._display_buf = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        q_img = QImage(
-            self._display_buf.data,
-            w, h, w * 3,
-            QImage.Format_RGB888
-        )
-        # QImage 데이터가 살아있는 동안 pixmap 생성
-        pixmap = QPixmap.fromImage(q_img.copy())  # .copy()로 QImage 메모리 독립
+        # 비율(0~1) 좌표 → 픽셀 좌표 변환
+        pts_px = [(int(p[0] * w), int(p[1] * h)) for p in self.pts_norm]
 
-        painter = QPainter(pixmap) # 그림을 그리는 붓(Painter) 생성
-        
-        # 펜(테두리 선) 종류 설정
-        pen_line = QPen(QColor(0, 255, 255), 3, Qt.SolidLine) # 완성된 실선 (하늘색)
-        pen_line_temp = QPen(QColor(255, 255, 0), 2, Qt.DashLine) # 마우스를 따라다니는 점선 (노란색)
-        pen_point = QPen(QColor(255, 255, 0), 8, Qt.SolidLine) # 꼭짓점 동그라미 (노란색)
-        
-        # 비율(0~1)로 저장된 좌표들을 실제 사진 픽셀 좌표로 다시 계산
-        points_q = []
-        for p in self.pts_norm:
-            points_q.append(QPoint(int(p[0] * w), int(p[1] * h)))
-            
-        if len(points_q) > 0:
-            # 1. 찍힌 좌표들에 동그란 점을 그림
-            painter.setPen(pen_point)
-            for p in points_q:
-                painter.drawPoint(p)
-                
-            # 2. 점이 2개 이상이면 점과 점 사이를 실선으로 이음
-            painter.setPen(pen_line)
-            if len(points_q) > 1:
-                for i in range(len(points_q) - 1):
-                    painter.drawLine(points_q[i], points_q[i+1])
-            
-            # 3. 아직 4개가 다 안 찍혔다면, 마지막 점부터 마우스 포인터까지 점선을 그음
-            if self.temp_pt_norm is not None and len(points_q) < 4:
-                temp_p = QPoint(int(self.temp_pt_norm[0] * w), int(self.temp_pt_norm[1] * h))
-                painter.setPen(pen_line_temp)
-                painter.drawLine(points_q[-1], temp_p)
-                
-            # 4. 점이 4개가 되면 마지막 점과 첫 번째 점을 잇고, 그릇 모양 안쪽을 반투명하게 칠함
-            if len(points_q) == 4:
-                painter.setPen(pen_line)
-                painter.drawLine(points_q[3], points_q[0]) 
-                painter.setBrush(QColor(0, 255, 255, 30)) # 안쪽을 채울 붓 설정 (알파값 30으로 반투명)
-                painter.drawPolygon(points_q)
-                
-        painter.end() # 그림 그리기 종료
-        # 완성된 그림을 라벨 크기(640x360)에 맞춰서 모니터에 띄움
-        self.video_label.setPixmap(pixmap.scaled(640, 360, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+        # 4개 완성: 반투명 채우기 + 닫힌 폴리곤
+        if len(pts_px) == 4:
+            overlay = img.copy()
+            cv2.fillPoly(overlay, [np.array(pts_px, dtype=np.int32)], (0, 255, 255))
+            cv2.addWeighted(overlay, 0.15, img, 0.85, 0, img)
+            cv2.polylines(img, [np.array(pts_px, dtype=np.int32)],
+                          isClosed=True, color=(0, 255, 255), thickness=3)
+        else:
+            # 점과 점 사이 실선
+            for i in range(len(pts_px) - 1):
+                cv2.line(img, pts_px[i], pts_px[i + 1], (0, 255, 255), 3)
+            # 마지막 점 → 마우스 추적 점선
+            if self.temp_pt_norm is not None and len(pts_px) > 0:
+                temp_px = (int(self.temp_pt_norm[0] * w),
+                           int(self.temp_pt_norm[1] * h))
+                # OpenCV 점선: 짧은 선분 반복
+                x1, y1 = pts_px[-1]; x2, y2 = temp_px
+                dist = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+                if dist > 0:
+                    dx, dy = (x2 - x1) / dist, (y2 - y1) / dist
+                    pos = 0.0
+                    while pos < dist:
+                        end = min(pos + 10, dist)
+                        p1 = (int(x1 + dx * pos), int(y1 + dy * pos))
+                        p2 = (int(x1 + dx * end), int(y1 + dy * end))
+                        cv2.line(img, p1, p2, (255, 255, 0), 2)
+                        pos += 20  # 간격
+
+        # 꼭짓점 동그라미
+        for pt in pts_px:
+            cv2.circle(img, pt, 8, (0, 255, 255), 2)
+            cv2.circle(img, pt, 5, (255, 255, 0), -1)
+
+        # BGR → RGB → 640×360 리사이즈 → QPixmap
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        self._display_buf = cv2.resize(img_rgb, (640, 360))
+        h2, w2 = self._display_buf.shape[:2]
+        q_img = QImage(self._display_buf.data, w2, h2, w2 * 3, QImage.Format_RGB888)
+        self.video_label.setPixmap(QPixmap.fromImage(q_img.copy()))
 
     # 사진 영역을 터치(클릭)했을 때 점을 추가하는 함수
     def roi_mouse_press(self, event):

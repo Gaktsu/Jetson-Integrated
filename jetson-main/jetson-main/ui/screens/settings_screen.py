@@ -61,9 +61,21 @@ class SettingsScreen(QWidget):
     def _shutdown(self):
         """창을 숨긴 뒤 QApplication 이벤트루프를 종료.
         main.py의 finally 블록에서 _cleanup()이 실행되어 pipeline 스레드가 정상 종료된다."""
+        from PyQt5.QtCore import QTimer
         from PyQt5.QtWidgets import QApplication
+
+        # 1) 실행 중인 QTimer 먼저 정지 (타이머 콜백이 삭제 중인 위젯에 접근하는 것 방지)
+        live = getattr(self.main_window, 'live_screen', None)
+        if live is not None and hasattr(live, 'timer'):
+            live.timer.stop()
+        if hasattr(self.main_window, '_buzzer_timer'):
+            self.main_window._buzzer_timer.stop()
+
+        # 2) 창 숨기기
         self.main_window.hide()
-        QApplication.quit()
+
+        # 3) 현재 이벤트 처리가 끝난 뒤 종료 (singleShot 0ms 지연)
+        QTimer.singleShot(0, QApplication.quit)
 
     def _open_roi_setup(self):
         """위험 영역 세팅 버튼: live_screen의 첫 번째 프레임을 ROI 설정 화면에 넘기고 이동."""
