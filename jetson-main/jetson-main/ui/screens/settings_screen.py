@@ -53,23 +53,22 @@ class SettingsScreen(QWidget):
         self.back_btn.clicked.connect(lambda: self.main_window.switch_screen(1))
 
     def _shutdown(self):
-        """창을 숨긴 뒤 QApplication 이벤트루프를 종료.
-        main.py의 finally 블록에서 _cleanup()이 실행되어 pipeline 스레드가 정상 종료된다."""
+        """UI 창을 즉시 제거하고 QApplication 이벤트루프를 종료.
+        main.py의 finally 블록에서 _cleanup()이 별도 스레드로 실행된다."""
         from PyQt5.QtCore import QTimer
         from PyQt5.QtWidgets import QApplication
 
-        # 1) 실행 중인 QTimer 먼저 정지 (타이머 콜백이 삭제 중인 위젯에 접근하는 것 방지)
+        # 1) 실행 중인 QTimer 먼저 정지
         live = getattr(self.main_window, 'live_screen', None)
         if live is not None and hasattr(live, 'timer'):
             live.timer.stop()
         if hasattr(self.main_window, '_buzzer_timer'):
             self.main_window._buzzer_timer.stop()
 
-        # 2) 창 즉시 투명하게 만들어 시각적으로 바로 사라진 것처럼 처리
-        self.main_window.setWindowOpacity(0.0)
+        # 2) 모든 창을 닫고 원도우 매니저에 파괴 신호 전달—화면에서 즉시 사라짐
+        QApplication.closeAllWindows()
         QApplication.processEvents()
-        self.main_window.hide()
 
-        # 3) OS 컴포지터가 창을 화면에서 완전히 제거할 시간(200ms) 후 종료
-        QTimer.singleShot(200, QApplication.quit)
+        # 3) 이벤트 루프 종료
+        QTimer.singleShot(50, QApplication.quit)
 

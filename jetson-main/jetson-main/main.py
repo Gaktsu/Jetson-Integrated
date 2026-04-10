@@ -377,7 +377,17 @@ def main():
         logger.event_error(EventType.ERROR_OCCURRED, "메인 루프 오류 발생",
                            {"error": str(e)}, exc_info=True)
     finally:
-        _cleanup(cameras, states, threads, save_stop_event, inference_stop_event, sensor_stop_event, gps, imu, buzzer)
+        # UI가 종료된 뒤 _cleanup을 비복시(non-daemon) 스레드로 실행
+        # 메인 스레드가 슦ui 메시지 폼프 없이 즈시 리턴하므로 OS 응답 없음 다이얼로그 미표시
+        cleanup_thread = threading.Thread(
+            target=_cleanup,
+            args=(cameras, states, threads, save_stop_event,
+                  inference_stop_event, sensor_stop_event, gps, imu, buzzer),
+            daemon=False,
+            name="cleanup_main",
+        )
+        cleanup_thread.start()
+        # 메인 스레드 종료 → Python이 non-daemon 스레드(뫹 cleanup)가 끝날 때까지 프로세스 유지
 
 
 if __name__ == "__main__":
