@@ -300,6 +300,10 @@ def _cleanup(
         _sp.run(["stty", "sane"], check=False)
     except Exception:
         pass
+    # 모든 정리가 끝난 시점에서 os._exit으로 강제 종료
+    # Python GC와 Qt C++ 소멸자 순서 충돌("terminate called without an active exception")을 방지
+    import os as _os
+    _os._exit(0)
 
 
 # ──────────────────────────────────────────────
