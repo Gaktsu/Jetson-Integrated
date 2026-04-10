@@ -1,8 +1,53 @@
 import cv2
 import datetime
+import json
+import os
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QImage, QPixmap
+from config.settings import CAMERA_INDICES, PROJECT_ROOT
+
+
+class _PipelineAiProxy:
+    """
+    pipeline 모드에서 live_settings_screen / roi_setup_screen의
+    'live_screen.ai' 참조를 처리하는 어댑터.
+    - detection on/off: 플래그 보관 (추후 inference 스레드와 연결 가능)
+    - ROI get/set: config/roi_config_cam{cam_id}.json 파일 기반
+    """
+    _DEFAULT_ROI = [[220, 340], [420, 340], [420, 140], [220, 140]]
+
+    def __init__(self):
+        self.detection_enabled = True
+
+    def set_detection_enabled(self, enabled: bool) -> None:
+        self.detection_enabled = enabled
+
+    def get_roi_points(self, cam_idx: int) -> list:
+        """JSON 파일에서 ROI 좌표 로드. 없으면 기본값 반환."""
+        cam_id = CAMERA_INDICES[cam_idx] if cam_idx < len(CAMERA_INDICES) else cam_idx
+        path = os.path.join(PROJECT_ROOT, "config", f"roi_config_cam{cam_id}.json")
+        try:
+            with open(path, "r") as f:
+                data = json.load(f)
+            if isinstance(data, list) and len(data) >= 3:
+                return data
+        except Exception:
+            pass
+        return [list(p) for p in self._DEFAULT_ROI]
+
+    def set_roi_points(self, cam_idx: int, points: list) -> None:
+        """ROI 좌표를 JSON 파일에 저장."""
+        cam_id = CAMERA_INDICES[cam_idx] if cam_idx < len(CAMERA_INDICES) else cam_idx
+        path = os.path.join(PROJECT_ROOT, "config", f"roi_config_cam{cam_id}.json")
+        try:
+            with open(path, "w") as f:
+                json.dump([[int(p[0]), int(p[1])] for p in points], f)
+        except Exception as e:
+            print(f"ROI 저장 실패 (cam_idx={cam_idx}): {e}")
+
+    def cleanup(self) -> None:
+        pass
 
 class LiveScreen(QWidget):
     def __init__(self, main_window, shared_states=None):
@@ -20,6 +65,10 @@ class LiveScreen(QWidget):
 
         # pipeline의 SharedState 리스트 — 카메라/AI/녹화는 모두 pipeline이 담당
         self.shared_states = shared_states
+
+        # ai: live_settings_screen / roi_setup_screen에서 참조되는 접점
+        # pipeline 모드에서는 JSON 기반 프록시를 사용
+        self.ai = _PipelineAiProxy()
 
         # 4개의 카메라 영상을 보여줄 UI 라벨(영역)을 생성
         self.cam_labels = []
