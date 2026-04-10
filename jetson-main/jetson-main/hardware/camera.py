@@ -10,7 +10,6 @@ import platform
 from typing import List, Optional, Tuple
 from config.settings import CAMERA_INDICES, CAMERA_MAX_RETRIES, CAMERA_RETRY_DELAY
 from errors.enums import CameraError
-from pipeline.shared_state import SharedState
 from utils.logger import get_logger, EventType
 
 logger = get_logger("hardware.camera")
@@ -168,10 +167,9 @@ class CameraCapture:
             self.cap.release()
 
 
-def init_cameras() -> Tuple[Optional[List[CameraCapture]], Optional[List[SharedState]]]:
+def init_cameras() -> Optional[List[CameraCapture]]:
     """설정된 카메라 인덱스로 카메라를 초기화. 하나라도 실패 시 None 반환."""
     cameras: List[CameraCapture] = []
-    states: List[SharedState] = []
     for idx in CAMERA_INDICES:
         logger.event_info(EventType.MODULE_INIT, f"카메라 {idx} 초기화 중")
         camera = CameraCapture(idx)
@@ -179,9 +177,8 @@ def init_cameras() -> Tuple[Optional[List[CameraCapture]], Optional[List[SharedS
             logger.event_error(EventType.CAMERA_ERROR, f"카메라 {idx} 초기화 실패")
             for cam in cameras:
                 cam.release()
-            return None, None
+            return None
         cameras.append(camera)
-        states.append(SharedState())
         logger.event_info(EventType.CAMERA_OPEN, f"카메라 {idx} 초기화 완료")
     logger.debug(f"{len(cameras)}개 카메라 초기화 완료")
-    return cameras, states
+    return cameras

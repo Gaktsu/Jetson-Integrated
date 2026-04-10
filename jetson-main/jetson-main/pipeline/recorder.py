@@ -31,24 +31,24 @@ def _write_fps_compensated(
     frame,
     fps_map: dict,
     pending_frames: dict,
-    frame_oweds: dict,
+    frame_carry_over: dict,
 ) -> None:
     """타임스탬프 기반 누산기 방식으로 프레임을 writer에 씁니다.
     이전 프레임과의 시간 간격을 계산해 repeat 횟수를 결정하고,
-    소수 오차는 frame_oweds 에 누산해 다음 호출로 이월합니다.
+    소수 오차는 frame_carry_over 에 누산해 다음 호출로 이월합니다.
     """
     fps = fps_map.get(cam_id, 30.0) or 30.0
-    target_dt = 1.0 / fps
-    max_gap = target_dt * 4  # 최대 4프레임 공백까지 허용 (이상치 클리핑)
-    prev = pending_frames.get(cam_id)
-    if prev is not None:
-        prev_ts, prev_frame = prev
-        gap = min(timestamp - prev_ts, max_gap)
-        frame_oweds[cam_id] = frame_oweds.get(cam_id, 0.0) + gap / target_dt
-        repeat = int(frame_oweds[cam_id])
-        frame_oweds[cam_id] -= repeat
+    target_frame_interval = 1.0 / fps
+    max_gap = target_frame_interval * 4  # 최대 4프레임 공백까지 허용 (이상치 클리핑)
+    previous_frame_entry = pending_frames.get(cam_id)
+    if previous_frame_entry is not None:
+        previous_timestamp, previous_frame = previous_frame_entry
+        gap = min(timestamp - previous_timestamp, max_gap)
+        frame_carry_over[cam_id] = frame_carry_over.get(cam_id, 0.0) + gap / target_frame_interval
+        repeat = int(frame_carry_over[cam_id])
+        frame_carry_over[cam_id] -= repeat
         for _ in range(repeat):
-            writer.write(prev_frame)
+            writer.write(previous_frame)
     pending_frames[cam_id] = (timestamp, frame)
 
 
@@ -120,7 +120,7 @@ def save_loop(
     # 이전 프레임을 보관해 다음 프레임 도착 시 간격 계산 후 반복 write
     pending_frames: dict[int, Optional[Tuple[float, cv2.Mat]]] = {}
     # 누산기: round() 오차 누적 방지 - 소수 부분을 다음 프레임으로 이월
-    frame_oweds: dict[int, float] = {}
+    frame_carry_over: dict[int, float] = {}
     
     # 이벤트별 폴더 관리
     current_event_folder: Optional[str] = None
@@ -174,7 +174,7 @@ def save_loop(
             if state_map:
                 now = time.time()
                 for check_cam_id in state_map.keys():
-                    with state_map[check_cam_id].det_lock:
+                    with state_map[check_cam_id].detection_lock:
                         _intr = state_map[check_cam_id].last_intrusion
                         _ts   = state_map[check_cam_id].last_intrusion_ts
                     if _intr:
@@ -185,7 +185,7 @@ def save_loop(
                         break
 
                 if cam_id in state_map:
-                    with state_map[cam_id].det_lock:
+                    with state_map[cam_id].detection_lock:
                         sensor_data = state_map[cam_id].last_sensor_data
 
             if sensor_data is None and sensor_getter:
@@ -212,7 +212,7 @@ def save_loop(
                     writers[cam_id], writer_paths[cam_id] = result
                 
                 # 타임스탬프 기반 반복 write (누산기 방식 - 오차 이월로 버벅임/느림 방지)
-                _write_fps_compensated(writers[cam_id], cam_id, timestamp, frame, fps_map, pending_frames, frame_oweds)
+                _write_fps_compensated(writers[cam_id], cam_id, timestamp, frame, fps_map, pending_frames, frame_carry_over)
                 continue
 
             buffer = buffers.setdefault(cam_id, deque())
@@ -274,7 +274,7 @@ def save_loop(
                     writers[cam_id], writer_paths[cam_id] = result
                     recording_active[cam_id] = True
                     post_deadline[cam_id] = None
-                    frame_oweds[cam_id] = 0.0  # 새 이벤트 시작 시 누산기 초기화
+                    frame_carry_over[cam_id] = 0.0  # 새 이벤트 시작 시 누산기 초기화
 
                     # 버퍼 프레임 저장 - 누산기 방식 (오차 이월로 버벅임/느림 방지)
                     fps = fps_map.get(cam_id, 30.0) or 30.0
@@ -302,7 +302,7 @@ def save_loop(
                             {"camera": cam_id, "error": str(e), "error_type": type(e).__name__, "buffer_count": buffer_count}
                         )
                     # 버퍼 누산기 잔량을 실시간 구간으로 이월
-                    frame_oweds[cam_id] = buf_owed
+                    frame_carry_over[cam_id] = buf_owed
 
                     logger.event_info(
                         EventType.MODULE_START,
@@ -332,7 +332,7 @@ def save_loop(
 
                 writer = writers.get(cam_id)
                 if writer:
-                    _write_fps_compensated(writer, cam_id, timestamp, frame, fps_map, pending_frames, frame_oweds)
+                    _write_fps_compensated(writer, cam_id, timestamp, frame, fps_map, pending_frames, frame_carry_over)
                     logger.debug(
                         "이벤트 프레임 저장",
                         {"camera": cam_id, "timestamp": timestamp}
@@ -362,14 +362,14 @@ def save_loop(
                 if deadline is not None and time.time() <= deadline:
                     writer = writers.get(cam_id)
                     if writer:
-                        _write_fps_compensated(writer, cam_id, timestamp, frame, fps_map, pending_frames, frame_oweds)
+                        _write_fps_compensated(writer, cam_id, timestamp, frame, fps_map, pending_frames, frame_carry_over)
                 else:
                     # 녹화 종료 전 pending 프레임 마지막 1회 flush
                     writer = writers.get(cam_id)
                     if writer:
-                        prev = pending_frames.pop(cam_id, None)
-                        if prev is not None:
-                            writer.write(prev[1])
+                        last_pending_frame = pending_frames.pop(cam_id, None)
+                        if last_pending_frame is not None:
+                            writer.write(last_pending_frame[1])
                     writer = writers.pop(cam_id, None)
                     if writer:
                         writer.release()
@@ -394,7 +394,7 @@ def save_loop(
                                 transcode_threads.append(t)
                     recording_active[cam_id] = False
                     post_deadline[cam_id] = None
-                    frame_oweds.pop(cam_id, None)  # 녹화 종료 시 누산기 초기화
+                    frame_carry_over.pop(cam_id, None)  # 녹화 종료 시 누산기 초기화
                     
                     # 모든 카메라 녹화 종료되면 이벤트 폴더 초기화
                     if not any(recording_active.values()):

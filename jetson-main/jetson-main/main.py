@@ -34,6 +34,7 @@ from pipeline.uploader import start_event_upload_worker
 from pipeline.sensors import start_sensor_threads
 from ui.renderer import draw_detections
 from ai.detector import load_roi_polygon
+from config.roi_manager import roi_config_path
 from utils.time_utils import FPSCounter
 from utils.sensor_sync import SensorBuffer
 from utils.logger import get_logger, EventType
@@ -82,7 +83,7 @@ def _get_current_frame(states: List[SharedState], cam_idx: int):
     with state.frame_lock:
         seq = state.latest_frame_seq
         frame = state.latest_frame.copy() if state.latest_frame is not None else None
-    with state.det_lock:
+    with state.detection_lock:
         detections = list(state.last_detections)
         intrusion = state.last_intrusion
         last_intrusion_ts = state.last_intrusion_ts
@@ -104,7 +105,7 @@ def _determine_saving_global(states: List[SharedState]) -> bool:
         return True
     now = time.time()
     for state in states:
-        with state.det_lock:
+        with state.detection_lock:
             intrusion = state.last_intrusion
             last_ts   = state.last_intrusion_ts
         if intrusion:
@@ -195,18 +196,14 @@ def _stack_panels(panels: List[cv2.Mat]) -> cv2.Mat:
 
 def _load_roi_polygons() -> Dict[int, Any]:
     """카메라별 ROI 폴리곤 파일을 읽어 dict 반환. 파일 없으면 None."""
-    polygons = {}
-    for cam_id in CAMERA_INDICES:
-        path = os.path.join(PROJECT_ROOT, "config", f"roi_config_cam{cam_id}.json")
-        polygons[cam_id] = load_roi_polygon(path)
-    return polygons
+    return {cam_id: load_roi_polygon(roi_config_path(cam_id)) for cam_id in CAMERA_INDICES}
 
 
 def _read_camera_state_snapshot(state: SharedState):
     """한 카메라의 최신 프레임·탐지·경고 레벨을 스레드 안전하게 읽어 반환합니다."""
     with state.frame_lock:
         frame = state.latest_frame.copy() if state.latest_frame is not None else None
-    with state.det_lock:
+    with state.detection_lock:
         detections = list(state.last_detections)
         intrusion  = state.last_intrusion
         warning_level = state.last_warning_level
@@ -360,9 +357,10 @@ def main():
         _start_watchdog_timer()
 
     # 1. 카메라 초기화
-    cameras, states = init_cameras()
+    cameras = init_cameras()
     if cameras is None:
         return
+    states: List[SharedState] = [SharedState() for _ in cameras]
 
     # 2. 카메라별 독립 모델 로드 (ByteTrack 상태 공유 방지)
     _loaded = [load_model() for _ in cameras]

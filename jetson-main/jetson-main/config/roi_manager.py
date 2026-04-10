@@ -11,6 +11,11 @@ from ai.detector import load_roi_polygon
 from config.settings import CAMERA_INDICES, PROJECT_ROOT
 
 
+def roi_config_path(cam_id: int) -> str:
+    """카메라 ID에 대응하는 ROI 설정 파일 경로를 반환합니다."""
+    return os.path.join(PROJECT_ROOT, "config", f"roi_config_cam{cam_id}.json")
+
+
 class RoiManager:
     """카메라별 ROI 좌표를 JSON 파일로 영속 관리하는 클래스."""
 
@@ -24,7 +29,7 @@ class RoiManager:
 
     def _roi_path(self, cam_idx: int) -> str:
         cam_id = CAMERA_INDICES[cam_idx] if cam_idx < len(CAMERA_INDICES) else cam_idx
-        return os.path.join(PROJECT_ROOT, "config", f"roi_config_cam{cam_id}.json")
+        return roi_config_path(cam_id)
 
     def get_roi_points(self, cam_idx: int) -> list:
         """JSON 파일에서 ROI 좌표 로드. 없으면 기본값 반환."""

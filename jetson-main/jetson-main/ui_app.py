@@ -60,12 +60,11 @@ class MainApp(QMainWindow):
             self._buzzer_timer.start(100)
 
     def _update_buzzer(self):
-        """SharedState에서 쳨입 여부를 읽어 부저를 제어"""
+        """비점장 침입 여부를 읽어 부저를 제어"""
         for state in self._shared_states:
-            with state.det_lock:
-                if state.last_intrusion:
-                    self._buzzer.activate()
-                    return
+            if state.is_intruding():
+                self._buzzer.activate()
+                return
         self._buzzer.deactivate()
 
     def switch_screen(self, index):

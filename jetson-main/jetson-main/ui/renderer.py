@@ -36,28 +36,28 @@ def draw_results(
     _FONT_SCALE = 0.55
     _THICKNESS  = 2
 
-    for det in detections:
-        x1, y1, x2, y2 = det["bbox"]
-        label = f"{det['class_name']} {det['confidence']:.2f}"
+    for detection in detections:
+        x1, y1, x2, y2 = detection["bbox"]
+        label = f"{detection['class_name']} {detection['confidence']:.2f}"
 
         # bounding box
         cv2.rectangle(frame, (x1, y1), (x2, y2), _BOX_COLOR, _THICKNESS)
 
         # 라벨 배경 크기 계산
-        (tw, th), baseline = cv2.getTextSize(label, _FONT, _FONT_SCALE, 1)
-        pad = 4
-        label_h = th + baseline + pad * 2
+        (text_width, text_height), baseline = cv2.getTextSize(label, _FONT, _FONT_SCALE, 1)
+        padding = 4
+        label_height = text_height + baseline + padding * 2
 
         # 박스 위에 공간이 있으면 박스 바깥 위쪽, 없으면 박스 안쪽 상단
-        if y1 >= label_h:
-            bg_y1, bg_y2 = y1 - label_h, y1
+        if y1 >= label_height:
+            label_bg_top, label_bg_bottom = y1 - label_height, y1
         else:
-            bg_y1, bg_y2 = y1, y1 + label_h
+            label_bg_top, label_bg_bottom = y1, y1 + label_height
 
-        cv2.rectangle(frame, (x1, bg_y1), (x1 + tw + pad * 2, bg_y2), _BG_COLOR, -1)
+        cv2.rectangle(frame, (x1, label_bg_top), (x1 + text_width + padding * 2, label_bg_bottom), _BG_COLOR, -1)
         cv2.putText(
             frame, label,
-            (x1 + pad, bg_y2 - baseline - pad),
+            (x1 + padding, label_bg_bottom - baseline - padding),
             _FONT, _FONT_SCALE, _TXT_COLOR, 1, cv2.LINE_AA,
         )
 
@@ -99,41 +99,41 @@ def _draw_roi_overlay(
     roi_polygon: Optional[Sequence[Sequence[int]]],
     color,
 ) -> Optional[np.ndarray]:
-    """ROI 폴리곤을 반투명 채우기 + 테두리로 그립니다. poly_arr 반환."""
+    """ROI 폴리곤을 반투명 채우기 + 테두리로 그립니다. polygon_array 반환."""
     if roi_polygon is None or len(roi_polygon) < 3:
         return None
-    poly_arr = np.array(roi_polygon, dtype=np.int32)
+    polygon_array = np.array(roi_polygon, dtype=np.int32)
     overlay = frame.copy()
-    cv2.fillPoly(overlay, [poly_arr], color)
+    cv2.fillPoly(overlay, [polygon_array], color)
     cv2.addWeighted(overlay, 0.15, frame, 0.85, 0, frame)
-    cv2.polylines(frame, [poly_arr], True, color, 2)
-    return poly_arr
+    cv2.polylines(frame, [polygon_array], True, color, 2)
+    return polygon_array
 
 
 def _draw_person_foot_dots(
     frame: cv2.Mat,
     detections: List[Detection],
-    poly_arr: Optional[np.ndarray],
+    polygon_array: Optional[np.ndarray],
     alert_color,
 ) -> None:
     """사람 탐지 결과의 발끝 점과 트랙 ID를 프레임에 그립니다."""
-    for det in detections:
-        x1, y1, x2, y2 = det["bbox"]
-        if det["class_id"] != 0:
+    for detection in detections:
+        x1, y1, x2, y2 = detection["bbox"]
+        if detection["class_id"] != 0:
             continue
         foot_x = (x1 + x2) // 2
         foot_y = y2
         is_inside = (
-            poly_arr is not None and
-            cv2.pointPolygonTest(poly_arr, (float(foot_x), float(foot_y)), False) >= 0
+            polygon_array is not None and
+            cv2.pointPolygonTest(polygon_array, (float(foot_x), float(foot_y)), False) >= 0
         )
         dot_color = alert_color if is_inside else (255, 0, 0)
         cv2.circle(frame, (foot_x, foot_y), 7, dot_color, -1)
-        tid = det.get("track_id")
-        if tid is not None:
-            label = f"ID:{tid}"
-            (tw, _), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-            cv2.putText(frame, label, (foot_x - tw // 2, foot_y + 22),
+        track_id = detection.get("track_id")
+        if track_id is not None:
+            label = f"ID:{track_id}"
+            (label_text_width, _), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+            cv2.putText(frame, label, (foot_x - label_text_width // 2, foot_y + 22),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
 
 
@@ -154,18 +154,18 @@ def _draw_status_bar(
                 cv2.FONT_HERSHEY_SIMPLEX, 0.75, screen_color, 2, cv2.LINE_AA)
 
     speed_text = f"Speed: {forklift_speed}/5"
-    spd_size = cv2.getTextSize(speed_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
-    cv2.putText(frame, speed_text, (w - spd_size[0] - 12, 36),
+    speed_text_size = cv2.getTextSize(speed_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
+    cv2.putText(frame, speed_text, (w - speed_text_size[0] - 12, 36),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)
 
     cam_text = f"CAM {camera_index}"
-    cam_sz = cv2.getTextSize(cam_text, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)[0]
-    cv2.putText(frame, cam_text, (w - cam_sz[0] - 10, BAR_H + 22),
+    camera_label_size = cv2.getTextSize(cam_text, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)[0]
+    cv2.putText(frame, cam_text, (w - camera_label_size[0] - 10, BAR_H + 22),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.55, (200, 200, 200), 1, cv2.LINE_AA)
 
     if saving:
-        sav_size = cv2.getTextSize("Saving...", cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)[0]
-        cv2.putText(frame, "Saving...", (w - sav_size[0] - 12, BAR_H + 44),
+        saving_text_size = cv2.getTextSize("Saving...", cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)[0]
+        cv2.putText(frame, "Saving...", (w - saving_text_size[0] - 12, BAR_H + 44),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 255), 2, cv2.LINE_AA)
 
 
@@ -173,8 +173,8 @@ def _draw_camera_label_only(frame: cv2.Mat, camera_index: int) -> None:
     """상태바 숨김 모드: 카메라 번호만 우상단에 표시합니다."""
     w = frame.shape[1]
     cam_text = f"CAM {camera_index}"
-    cam_sz = cv2.getTextSize(cam_text, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)[0]
-    cv2.putText(frame, cam_text, (w - cam_sz[0] - 6, 18),
+    camera_label_size = cv2.getTextSize(cam_text, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)[0]
+    cv2.putText(frame, cam_text, (w - camera_label_size[0] - 6, 18),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1, cv2.LINE_AA)
 
 
@@ -205,8 +205,8 @@ def draw_detections(
     screen_color = _LEVEL_COLOR[warning_level]
     alarm_msg    = _LEVEL_MSG[warning_level]
 
-    poly_arr = _draw_roi_overlay(frame, roi_polygon, screen_color)
-    _draw_person_foot_dots(frame, detections, poly_arr, screen_color)
+    polygon_array = _draw_roi_overlay(frame, roi_polygon, screen_color)
+    _draw_person_foot_dots(frame, detections, polygon_array, screen_color)
 
     if show_status_bar:
         _draw_status_bar(frame, alarm_msg, screen_color, forklift_speed, camera_index, saving)

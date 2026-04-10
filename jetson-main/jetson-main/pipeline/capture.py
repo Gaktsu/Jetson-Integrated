@@ -64,18 +64,14 @@ def start_capture_threads(
 def _read_frame_with_timing(cap) -> tuple:
     """캡처 장치에서 프레임을 읽고 소요 시간(ms)을 함께 반환합니다."""
     t0 = time.perf_counter()
-    ok, frame = cap.read_frame()
+    read_success, frame = cap.read_frame()
     elapsed_ms = (time.perf_counter() - t0) * 1000
-    return ok, frame, elapsed_ms
+    return read_success, frame, elapsed_ms
 
 
 def _update_shared_state(state: SharedState, frame, timestamp: float, elapsed_ms: float) -> None:
     """캡처된 프레임과 타이밍 정보를 SharedState에 기록합니다."""
-    state.capture_ms = elapsed_ms
-    with state.frame_lock:
-        state.latest_frame = frame
-        state.latest_frame_seq += 1
-        state.latest_frame_ts = timestamp
+    state.put_captured_frame(frame, timestamp, elapsed_ms)
 
 
 def _enqueue_frame_for_inference(state: SharedState, timestamp: float, frame) -> None:
@@ -107,8 +103,8 @@ def capture_loop(cap, state: SharedState, cam_id: int, save_queue: Optional[queu
 
     frame_count = 0
     while not state.stop_event.is_set():
-        ok, frame, elapsed_ms = _read_frame_with_timing(cap)
-        if not ok:
+        read_success, frame, elapsed_ms = _read_frame_with_timing(cap)
+        if not read_success:
             time.sleep(0.001)
             continue
 

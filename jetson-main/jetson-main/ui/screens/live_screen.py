@@ -124,29 +124,24 @@ class LiveScreen(QWidget):
             for i, state in enumerate(self.shared_states):
                 if i >= 4:
                     break
-                with state.frame_lock:
-                    if state.latest_frame is None:
-                        continue
-                    raw = state.latest_frame.copy()
 
-                self.current_raw_frames[i] = raw
+                snap = state.snapshot()
+                if snap.frame is None:
+                    continue
 
-                with state.det_lock:
-                    detections     = list(state.last_detections)
-                    intrusion      = state.last_intrusion
-                    warning_level  = state.last_warning_level
+                self.current_raw_frames[i] = snap.frame
 
                 cam_id = CAMERA_INDICES[i] if i < len(CAMERA_INDICES) else i
                 roi_polygon = self._get_roi_cached(cam_id)
 
                 frames[i] = draw_detections(
-                    raw,
-                    detections,
+                    snap.frame,
+                    snap.detections,
                     roi_polygon=roi_polygon,
-                    intrusion=intrusion,
-                    warning_level=warning_level,
+                    intrusion=snap.intrusion,
+                    warning_level=snap.warning_level,
                     camera_index=cam_id,
-                    forklift_speed=state.forklift_speed,
+                    forklift_speed=snap.forklift_speed,
                     show_status_bar=False,
                 )
 
@@ -239,7 +234,7 @@ class LiveScreen(QWidget):
         max_level = WarningLevel.SAFE
         max_speed = 0
         for state in self.shared_states:
-            with state.det_lock:
+            with state.detection_lock:
                 wl  = state.last_warning_level
                 spd = getattr(state, 'forklift_speed', 0) or 0
             if wl is not None and wl in _order:
