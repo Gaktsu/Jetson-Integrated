@@ -12,6 +12,7 @@ from collections import deque
 from typing import Any, Callable, Deque, Dict, List, Optional, Tuple
 
 from config.settings import EVENT_RECORD_BUFFER_SEC, EVENT_RECORD_POST_SEC, MAX_EVENT_FOLDERS, MAX_FULL_FOLDERS, RECORDING_MODE, SAVE_DIR
+from config import settings as settings
 from utils.logger import get_logger, EventType
 from pipeline.shared_state import SharedState
 from pipeline.recorder_utils import (
@@ -99,7 +100,7 @@ def save_loop(
     if recording_mode == "event" and not state_map:
         recording_mode = "full"
     
-    # full 모드일 때 전용 폴더 생성
+    # full 모드일 때 전용 폴더 생성 (초기값)
     full_folder = None
     if recording_mode == "full":
         full_folder = os.path.join(save_dir, "full_recording")
@@ -134,6 +135,20 @@ def save_loop(
 
     try:
         while True:
+            # 런타임에 settings.RECORDING_MODE 변경을 반영
+            try:
+                current_mode = settings.RECORDING_MODE
+            except Exception:
+                current_mode = recording_mode
+
+            # full 모드로 전환되었을 때 실행 중이라면 폴더 생성
+            if current_mode == "full" and full_folder is None:
+                full_folder = os.path.join(save_dir, "full_recording")
+                try:
+                    os.makedirs(full_folder, exist_ok=True)
+                    logger.event_info(EventType.MODULE_START, "Full 녹화 폴더 생성(런타임)", {"path": full_folder})
+                except Exception as e:
+                    logger.event_error(EventType.ERROR_OCCURRED, "Full 녹화 폴더 생성 실패", {"error": str(e)})
             if stop_event.is_set():
                 if shutdown_deadline is None:
                     shutdown_deadline = time.time() + post_seconds
@@ -191,7 +206,7 @@ def save_loop(
             if sensor_data is None and sensor_getter:
                 sensor_data = sensor_getter(timestamp)
 
-            if recording_mode == "full":
+            if current_mode == "full":
                 full_dir = full_folder if full_folder is not None else save_dir
                 # full 모드: 시작 시 이벤트 폴더 생성
                 if full_event_folder is None:

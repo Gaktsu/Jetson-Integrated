@@ -110,3 +110,28 @@ def format_bytes(bytes_size: int) -> str:
             return f"{bytes_size:.2f} {unit}"
         bytes_size /= 1024.0
     return f"{bytes_size:.2f} PB"
+
+
+def format_save_dir(path: str = SAVE_DIR) -> int:
+    """
+    저장소(기본: SAVE_DIR) 내 모든 파일/폴더를 삭제합니다.
+
+    Returns:
+        삭제한 항목(파일+폴더) 수
+    """
+    deleted = 0
+    if not os.path.exists(path):
+        return 0
+    for name in os.listdir(path):
+        item = os.path.join(path, name)
+        try:
+            if os.path.isdir(item):
+                shutil.rmtree(item)
+                deleted += 1
+            else:
+                os.remove(item)
+                deleted += 1
+        except Exception:
+            # 무시하고 계속 진행
+            continue
+    return deleted
